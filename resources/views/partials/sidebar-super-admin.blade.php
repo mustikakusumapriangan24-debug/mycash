@@ -1,5 +1,4 @@
 <style>
-    /* RESET KHUSUS SIDEBAR */
     .sidebar,
     .sidebar * {
         box-sizing: border-box;
@@ -31,7 +30,6 @@
 
     .sidebar .brand h2 {
         margin: 0;
-        padding: 0;
         color: #e6c875;
         font-family: inherit;
         font-size: 23px;
@@ -42,19 +40,14 @@
 
     .sidebar .brand p {
         margin: 7px 0 0;
-        padding: 0;
         color: #d9c7c7;
-        font-family: inherit;
         font-size: 11px;
-        font-weight: 400;
         line-height: 1.5;
     }
 
     .sidebar .menu-label {
         margin: 28px 12px 12px;
-        padding: 0;
         color: #c5a7a9;
-        font-family: inherit;
         font-size: 10px;
         font-weight: 700;
         line-height: 1.4;
@@ -73,7 +66,6 @@
         border-radius: 10px;
         text-decoration: none;
         color: #eadfe0;
-        font-family: inherit;
         font-size: 12px;
         font-weight: 500;
         line-height: 1.4;
@@ -96,17 +88,69 @@
 
     .sidebar .sidebar-bottom {
         margin-top: auto;
-        padding-top: 20px;
+        padding-top: 18px;
         border-top: 1px solid rgba(230,200,117,.2);
         flex-shrink: 0;
     }
 
-    .sidebar .sidebar-bottom .menu-label {
-        margin-top: 0;
+    /* PROFIL PENGGUNA */
+    .sidebar .profile-link {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 11px 10px;
+        margin-bottom: 10px;
+        border-radius: 12px;
+        text-decoration: none;
+        color: white;
+        transition: .2s;
     }
 
-    .sidebar .sidebar-bottom form {
-        margin: 10px 0 0;
+    .sidebar .profile-link:hover,
+    .sidebar .profile-link.active {
+        background: rgba(230,200,117,.13);
+    }
+
+    .sidebar .profile-icon {
+        width: 39px;
+        height: 39px;
+        min-width: 39px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: rgba(230,200,117,.18);
+        border: 1px solid rgba(230,200,117,.5);
+        color: #e6c875;
+        font-size: 16px;
+    }
+
+    .sidebar .profile-info {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .sidebar .profile-name {
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 145px;
+    }
+
+    .sidebar .profile-role {
+        color: #c5a7a9;
+        font-size: 10px;
+    }
+
+    .sidebar .profile-arrow {
+        margin-left: auto;
+        color: #c5a7a9;
+        font-size: 11px;
     }
 
     .sidebar .logout-button {
@@ -124,6 +168,12 @@
         font-weight: 500;
         line-height: 1.4;
         text-align: left;
+        transition: .2s;
+    }
+
+    .sidebar .logout-button:hover {
+        background: rgba(255,255,255,.15);
+        color: #e6c875;
     }
 
     @media (max-width: 700px) {
@@ -153,12 +203,6 @@
 
     <div class="menu-label">PENGELOLAAN SISTEM</div>
 
-    <a href="{{ route('super-admin.dashboard') }}#data-pengguna"
-       class="nav-link">
-        <i class="fa-solid fa-users"></i>
-        Data Pengguna
-    </a>
-
     <a href="{{ route('super-admin.kelas.index') }}"
        class="nav-link {{ request()->routeIs('super-admin.kelas.*') ? 'active' : '' }}">
         <i class="fa-solid fa-school"></i>
@@ -177,27 +221,38 @@
         Kelola Wali Kelas
     </a>
 
-    <a href="{{ route('super-admin.dashboard') }}#pengawasan"
-       class="nav-link">
-        <i class="fa-solid fa-eye"></i>
-        Pengawasan Kas
-    </a>
-
-    <a href="{{ route('super-admin.dashboard') }}#hak-akses"
-       class="nav-link">
-        <i class="fa-solid fa-shield-halved"></i>
-        Hak Akses
-    </a>
-
     <div class="sidebar-bottom">
-        <div class="menu-label">AKUN</div>
 
+        <!-- PROFIL SUPER ADMIN -->
+        <a href="{{ route('super-admin.profile') }}"
+           class="profile-link {{ request()->routeIs('super-admin.profile') ? 'active' : '' }}">
+
+            <div class="profile-icon">
+                <i class="fa-solid fa-user"></i>
+            </div>
+
+            <div class="profile-info">
+                <span class="profile-name">
+                    {{ auth()->user()->name }}
+                </span>
+
+                <span class="profile-role">
+                    Super Admin
+                </span>
+            </div>
+
+            <i class="fa-solid fa-chevron-right profile-arrow"></i>
+        </a>
+
+        <!-- TOMBOL KELUAR -->
         <form action="{{ route('logout') }}" method="POST">
             @csrf
+
             <button type="submit" class="logout-button">
                 <i class="fa-solid fa-right-from-bracket"></i>
                 &nbsp; Keluar
             </button>
         </form>
+
     </div>
 </aside>

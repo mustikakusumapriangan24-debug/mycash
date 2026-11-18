@@ -11,6 +11,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SuperAdminKelasController;
 use App\Http\Controllers\SuperAdminBendaharaController;
 use App\Http\Controllers\WaliKelasProfileController;
+use App\Http\Controllers\SuperAdminProfileController;
 
 use App\Models\User;
 use App\Models\Transaction;
@@ -107,55 +108,62 @@ Route::middleware('auth')->group(function () {
 
 
         // =================================================
+        // PROFIL SUPER ADMIN
+        // =================================================
+
+        Route::get(
+            '/super-admin/profil',
+            [SuperAdminProfileController::class, 'index']
+        )->name('super-admin.profile');
+
+        Route::put(
+            '/super-admin/profil',
+            [SuperAdminProfileController::class, 'update']
+        )->name('super-admin.profile.update');
+
+        Route::put(
+            '/super-admin/profil/password',
+            [SuperAdminProfileController::class, 'updatePassword']
+        )->name('super-admin.profile.password');
+
+
+        // =================================================
         // DATA KELAS
         // =================================================
 
-        // Daftar kelas
         Route::get(
             '/super-admin/kelas',
             [SuperAdminKelasController::class, 'index']
         )->name('super-admin.kelas.index');
 
-
-        // Form tambah kelas
         Route::get(
             '/super-admin/kelas/tambah',
             [SuperAdminKelasController::class, 'create']
         )->name('super-admin.kelas.create');
 
-
-        // Simpan kelas baru
         Route::post(
             '/super-admin/kelas',
             [SuperAdminKelasController::class, 'store']
         )->name('super-admin.kelas.store');
 
-
-        // Detail kelas
         Route::get(
             '/super-admin/kelas/{id}',
             [SuperAdminKelasController::class, 'show']
         )->whereNumber('id')
             ->name('super-admin.kelas.show');
 
-
-        // Form edit kelas
         Route::get(
             '/super-admin/kelas/{id}/edit',
             [SuperAdminKelasController::class, 'edit']
         )->whereNumber('id')
             ->name('super-admin.kelas.edit');
 
-
-        // Perbarui data kelas
         Route::put(
             '/super-admin/kelas/{id}',
             [SuperAdminKelasController::class, 'update']
         )->whereNumber('id')
             ->name('super-admin.kelas.update');
 
-
-        // Hapus kelas dengan perlindungan data
         Route::delete(
             '/super-admin/kelas/{id}',
             [SuperAdminKelasController::class, 'destroy']
@@ -172,10 +180,45 @@ Route::middleware('auth')->group(function () {
             [SuperAdminBendaharaController::class, 'index']
         )->name('super-admin.bendahara.index');
 
+        // EDIT BENDAHARA
+
+        Route::get(
+            '/super-admin/bendahara/{id}/edit',
+            [SuperAdminBendaharaController::class, 'edit']
+        )->whereNumber('id')
+            ->name('super-admin.bendahara.edit');
+
+        // UPDATE DATA BENDAHARA
+
+        Route::put(
+            '/super-admin/bendahara/{id}',
+            [SuperAdminBendaharaController::class, 'update']
+        )->whereNumber('id')
+            ->name('super-admin.bendahara.update');
+
+        // AKTIF / NONAKTIFKAN AKUN BENDAHARA
+
+        Route::patch(
+            '/super-admin/bendahara/{id}/status',
+            [SuperAdminBendaharaController::class, 'toggleStatus']
+        )->whereNumber('id')
+            ->name('super-admin.bendahara.toggle-status');
+
+        // HAPUS BENDAHARA
+
+        Route::delete(
+            '/super-admin/bendahara/{id}',
+            [SuperAdminBendaharaController::class, 'destroy']
+        )->whereNumber('id')
+            ->name('super-admin.bendahara.destroy');
+
+        // DETAIL BENDAHARA
+
         Route::get(
             '/super-admin/bendahara/{id}',
             [SuperAdminBendaharaController::class, 'show']
-        )->name('super-admin.bendahara.show');
+        )->whereNumber('id')
+            ->name('super-admin.bendahara.show');
 
     });
 

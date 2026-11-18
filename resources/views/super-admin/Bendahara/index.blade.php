@@ -31,7 +31,6 @@
             color: var(--text);
         }
 
-        /* MAIN CONTENT */
         .main {
             margin-left: 250px;
             padding: 32px;
@@ -80,7 +79,6 @@
             font-weight: 700;
         }
 
-        /* TABLE PANEL */
         .panel {
             overflow: hidden;
             background: white;
@@ -111,10 +109,11 @@
             width: 100%;
             border-collapse: collapse;
             text-align: left;
+            min-width: 900px;
         }
 
         th {
-            padding: 16px 22px;
+            padding: 16px 18px;
             background: #fcf8f2;
             color: #78666b;
             font-size: 11px;
@@ -122,9 +121,10 @@
         }
 
         td {
-            padding: 17px 22px;
+            padding: 17px 18px;
             border-top: 1px solid #f1ece6;
             font-size: 12px;
+            vertical-align: middle;
         }
 
         .status {
@@ -145,20 +145,71 @@
             background: #fff0e5;
         }
 
-        .btn-detail {
-            display: inline-block;
-            padding: 8px 12px;
-            border-radius: 8px;
-            background: var(--maroon);
-            color: white;
-            text-decoration: none;
+        .unknown {
+            color: #777;
+            background: #eee;
+        }
+
+        .actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 8px 10px;
+            border: none;
+            border-radius: 7px;
+            font-family: inherit;
             font-size: 10px;
             font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .btn-detail {
+            background: var(--maroon);
+            color: white;
         }
 
         .btn-detail:hover {
             background: #6b101c;
             color: var(--gold);
+        }
+
+        .btn-edit {
+            background: #fff5dc;
+            color: #85651e;
+        }
+
+        .btn-edit:hover {
+            background: #f5e5b9;
+            color: #60460d;
+        }
+
+        .btn-toggle {
+            background: #e9f7ef;
+            color: #236c46;
+        }
+
+        .btn-toggle.nonaktif-btn {
+            background: #fff0e5;
+            color: #8a4c28;
+        }
+
+        .btn-delete {
+            background: #fdecec;
+            color: #a32d2d;
+        }
+
+        .btn-delete:hover {
+            background: #f8dada;
         }
 
         .empty {
@@ -200,7 +251,141 @@
             font-size: 10px;
         }
 
-        /* RESPONSIVE */
+        .alert {
+            margin: 15px 22px;
+            padding: 13px 16px;
+            border-radius: 9px;
+            font-size: 12px;
+        }
+
+        .alert-success {
+            color: #236c46;
+            background: #e9f7ef;
+        }
+
+        .alert-danger {
+            color: #a32d2d;
+            background: #fdecec;
+        }
+
+        /* MODAL TIDAK DAPAT DIHAPUS */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(30, 3, 7, 0.65);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-box {
+            width: 100%;
+            max-width: 460px;
+            padding: 32px;
+            background: #fff;
+            border: 1px solid rgba(230, 200, 117, 0.6);
+            border-radius: 18px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+            animation: modalShow 0.25s ease;
+        }
+
+        @keyframes modalShow {
+            from {
+                opacity: 0;
+                transform: translateY(15px) scale(0.97);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-icon {
+            width: 58px;
+            height: 58px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            border-radius: 50%;
+            background: #fff0e5;
+            color: #a32d2d;
+            font-size: 23px;
+        }
+
+        .modal-box h2 {
+            color: var(--maroon);
+            font-size: 21px;
+            font-weight: 800;
+            margin-bottom: 22px;
+        }
+
+        .modal-label {
+            display: block;
+            margin-bottom: 8px;
+            color: #8b8285;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .selected-name {
+            padding: 13px 15px;
+            margin-bottom: 20px;
+            background: #fcf8f2;
+            border: 1px solid #eee3d0;
+            border-radius: 9px;
+            color: var(--maroon);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .reason-title {
+            margin-bottom: 9px;
+            color: #78666b;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .reason-text {
+            color: #62595c;
+            font-size: 12px;
+            line-height: 1.9;
+        }
+
+        .reason-text strong {
+            color: var(--maroon);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 27px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-close-modal {
+            padding: 11px 27px;
+            border: none;
+            border-radius: 8px;
+            background: var(--maroon);
+            color: white;
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-close-modal:hover {
+            background: #6b101c;
+            color: var(--gold);
+        }
+
         @media (max-width: 700px) {
             .main {
                 margin-left: 0;
@@ -211,24 +396,26 @@
                 align-items: flex-start;
                 flex-direction: column;
             }
+
+            .modal-box {
+                padding: 25px;
+            }
         }
     </style>
 </head>
 
 <body>
 
-    {{-- SIDEBAR BERSAMA --}}
     @include('partials.sidebar-super-admin')
 
     <main class="main">
 
         <header class="topbar">
-
             <div>
                 <div class="eyebrow">Panel Administrasi Utama</div>
                 <h1>Kelola Bendahara</h1>
                 <p>
-                    Lihat daftar dan informasi akun Bendahara
+                    Lihat dan kelola informasi akun Bendahara
                     yang terdaftar di MyCash.
                 </p>
             </div>
@@ -237,7 +424,6 @@
                 <i class="fa-solid fa-user-shield"></i>
                 SUPER ADMIN
             </div>
-
         </header>
 
         <section class="panel">
@@ -251,13 +437,20 @@
             </div>
 
             @if (session('success'))
-                <div style="padding:15px 22px; color:#236c46; font-size:12px;">
+                <div class="alert alert-success">
+                    <i class="fa-solid fa-circle-check"></i>
                     {{ session('success') }}
                 </div>
             @endif
 
-            <div class="table-wrap">
+            @if (session('error'))
+                <div class="alert alert-danger">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    {{ session('error') }}
+                </div>
+            @endif
 
+            <div class="table-wrap">
                 <table>
                     <thead>
                         <tr>
@@ -281,7 +474,9 @@
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
 
-                                <td>{{ $item->nama }}</td>
+                                <td>
+                                    <strong>{{ $item->nama }}</strong>
+                                </td>
 
                                 <td>
                                     {{ $item->kelas?->kode_kelas ?? 'Belum ditentukan' }}
@@ -290,17 +485,60 @@
                                 <td>{{ $item->no_hp ?? '-' }}</td>
 
                                 <td>
-                                    <span class="status {{ $status === 'aktif' ? 'aktif' : 'nonaktif' }}">
+                                    <span class="status
+                                        {{ $status === 'aktif' ? 'aktif' : ($status === 'nonaktif' ? 'nonaktif' : 'unknown') }}">
                                         {{ ucfirst($status) }}
                                     </span>
                                 </td>
 
                                 <td>
-                                    <a href="{{ route('super-admin.bendahara.show', $item->id) }}"
-                                       class="btn-detail">
-                                        <i class="fa-solid fa-eye"></i>
-                                        Detail
-                                    </a>
+                                    <div class="actions">
+
+                                        <a href="{{ route('super-admin.bendahara.show', $item->id) }}"
+                                           class="btn-action btn-detail">
+                                            <i class="fa-solid fa-eye"></i>
+                                            Detail
+                                        </a>
+
+                                        <a href="{{ route('super-admin.bendahara.edit', $item->id) }}"
+                                           class="btn-action btn-edit">
+                                            <i class="fa-solid fa-pen"></i>
+                                            Edit
+                                        </a>
+
+                                        @if ($item->user)
+                                            <form action="{{ route('super-admin.bendahara.toggle-status', $item->id) }}"
+                                                  method="POST"
+                                                  onsubmit="return confirm('Yakin ingin mengubah status akun Bendahara ini?')">
+                                                @csrf
+                                                @method('PATCH')
+
+                                                <button type="submit"
+                                                        class="btn-action btn-toggle {{ $status === 'aktif' ? 'nonaktif-btn' : '' }}">
+                                                    @if ($status === 'aktif')
+                                                        <i class="fa-solid fa-ban"></i>
+                                                        Nonaktifkan
+                                                    @else
+                                                        <i class="fa-solid fa-check"></i>
+                                                        Aktifkan
+                                                    @endif
+                                                </button>
+                                            </form>
+                                        @endif
+
+                                        <form action="{{ route('super-admin.bendahara.destroy', $item->id) }}"
+                                              method="POST"
+                                              onsubmit="return confirm('PERINGATAN: Data Bendahara dan akun penggunanya akan dihapus jika tidak memiliki riwayat transaksi. Yakin ingin melanjutkan?')">
+                                            @csrf
+                                            @method('DELETE')
+
+                                            <button type="submit" class="btn-action btn-delete">
+                                                <i class="fa-solid fa-trash"></i>
+                                                Hapus
+                                            </button>
+                                        </form>
+
+                                    </div>
                                 </td>
                             </tr>
 
@@ -310,9 +548,7 @@
                                 <td colspan="6">
                                     <div class="empty">
                                         <i class="fa-solid fa-users"></i>
-
                                         <h3>Belum Ada Data Bendahara</h3>
-
                                         <p>
                                             Data bendahara belum tersedia.<br>
                                             Data akan muncul setelah Wali Kelas membuat akun Bendahara.
@@ -325,7 +561,6 @@
 
                     </tbody>
                 </table>
-
             </div>
 
         </section>
@@ -340,6 +575,67 @@
         </footer>
 
     </main>
+
+    {{-- POP-UP JIKA PENGHAPUSAN DITOLAK --}}
+    @if (session('delete_blocked'))
+        <div class="modal-overlay" id="deleteBlockedModal">
+            <div class="modal-box">
+
+                <div class="modal-icon">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+
+                <h2>Tidak Dapat Dihapus</h2>
+
+                <span class="modal-label">Data Terpilih</span>
+
+                <div class="selected-name">
+                    {{ session('delete_blocked.nama') }}
+                </div>
+
+                <div class="reason-title">Alasan Pembatalan:</div>
+
+                <p class="reason-text">
+                    Bendahara
+                    <strong>{{ session('delete_blocked.nama') }}</strong>
+                    tercatat pernah mencatat
+                    <strong>{{ session('delete_blocked.jumlah') }} riwayat transaksi kas</strong>
+                    di sistem.
+
+                    <br><br>
+
+                    Untuk menjaga integritas riwayat pembukuan kas,
+                    data master yang masih terikat tidak dapat dihapus
+                    sebelum data terkait diselesaikan.
+                </p>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn-close-modal"
+                            onclick="closeDeleteBlockedModal()">
+                        Tutup
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    @endif
+
+    <script>
+        function closeDeleteBlockedModal() {
+            const modal = document.getElementById('deleteBlockedModal');
+
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeDeleteBlockedModal();
+            }
+        });
+    </script>
 
 </body>
 </html>

@@ -12,12 +12,22 @@ class TransactionController extends Controller
     {
         $request->validate([
             'type' => 'required|in:in,out',
-            'amount' => 'required|numeric',
+            'amount' => 'required|numeric|min:1',
             'category' => 'required_if:type,in|nullable|string|in:Kas Siswa,Lainnya',
             'description' => 'nullable|string',
         ]);
 
+        $bendahara = $request->user()->bendahara;
+
+        if (!$bendahara) {
+            return redirect()->back()->with(
+                'error',
+                'Data Bendahara tidak ditemukan. Transaksi tidak dapat disimpan.'
+            );
+        }
+
         Transaction::create([
+            'bendahara_id' => $bendahara->id,
             'type' => $request->type,
             'amount' => $request->amount,
             'category' => $request->type === 'out'
