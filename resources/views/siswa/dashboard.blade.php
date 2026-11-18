@@ -258,6 +258,51 @@
 
 
         /* =========================
+           NOTIFICATION BADGE
+        ========================= */
+
+        .notification-menu {
+
+            position: relative;
+
+        }
+
+
+        .notification-badge {
+
+            margin-left: auto;
+
+            min-width: 20px;
+            height: 20px;
+
+            padding: 0 5px;
+
+            border-radius: 20px;
+
+            background: #D8C7A8;
+
+            color: #54251F;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            font-size: 9px;
+
+            font-weight: 800;
+
+        }
+
+
+        .notification-badge.empty {
+
+            opacity: .55;
+
+        }
+
+
+        /* =========================
            SIDEBAR PROFILE
         ========================= */
 
@@ -866,12 +911,47 @@
             border-bottom:
                 1px solid #EEE8E0;
 
+            cursor: pointer;
+
+            transition:
+                background .2s,
+                transform .2s;
+
+        }
+
+
+        .notification-item:hover {
+
+            background: #F8F4EC;
+
+            border-radius: 10px;
+
         }
 
 
         .notification-item:last-child {
 
             border-bottom: none;
+
+        }
+
+
+        .notification-item.unread {
+
+            background: #FCF9F2;
+
+            border-radius: 10px;
+
+            padding-left: 8px;
+
+            padding-right: 8px;
+
+        }
+
+
+        .notification-item.unread:hover {
+
+            background: #F7F0E3;
 
         }
 
@@ -902,6 +982,8 @@
         .notification-content {
 
             min-width: 0;
+
+            flex: 1;
 
         }
 
@@ -937,6 +1019,19 @@
             color: #A69F99;
 
             margin-top: 5px;
+
+        }
+
+
+        .unread-label {
+
+            display: inline-block;
+
+            margin-left: 5px;
+
+            color: var(--maroon);
+
+            font-weight: 800;
 
         }
 
@@ -1125,9 +1220,20 @@
                     Notifikasi
                 </span>
 
-                <span class="notification-badge">
-                    0
-                </span>
+
+                @if($unreadNotifications > 0)
+
+                    <span class="notification-badge">
+                        {{ $unreadNotifications }}
+                    </span>
+
+                @else
+
+                    <span class="notification-badge empty">
+                        0
+                    </span>
+
+                @endif
 
             </a>
 
@@ -1476,45 +1582,179 @@
                 <div class="notification-list">
 
 
-                    <div class="notification-item">
+                    @forelse($notifications as $notification)
 
 
-                        <div class="notification-icon">
+                        @if(is_null($notification->read_at))
 
-                            <i class="fa-solid fa-circle-info"></i>
+                            <!-- NOTIFIKASI BELUM DIBACA -->
+
+                            <form
+                                action="{{ route(
+                                    'siswa.notification.read',
+                                    $notification->id
+                                ) }}"
+                                method="POST"
+                                style="margin: 0;"
+                            >
+
+                                @csrf
+
+                                <button
+                                    type="submit"
+                                    class="notification-item unread"
+                                    style="
+                                        width: 100%;
+                                        border: none;
+                                        font-family: inherit;
+                                        text-align: left;
+                                        cursor: pointer;
+                                    "
+                                >
+
+                                    <div class="notification-icon">
+
+                                        @if($notification->type === 'pembayaran_berhasil')
+
+                                            <i class="fa-solid fa-circle-check"></i>
+
+                                        @elseif($notification->type === 'pembayaran_diperbarui')
+
+                                            <i class="fa-solid fa-pen-to-square"></i>
+
+                                        @elseif($notification->type === 'pembayaran_dihapus')
+
+                                            <i class="fa-solid fa-trash"></i>
+
+                                        @elseif($notification->type === 'pengingat_pembayaran')
+
+                                            <i class="fa-solid fa-bell"></i>
+
+                                        @else
+
+                                            <i class="fa-solid fa-circle-info"></i>
+
+                                        @endif
+
+                                    </div>
+
+
+                                    <div class="notification-content">
+
+                                        <div class="notification-title">
+
+                                            {{ $notification->title }}
+
+                                        </div>
+
+
+                                        <div class="notification-text">
+
+                                            {{ $notification->message }}
+
+                                        </div>
+
+
+                                        <div class="notification-time">
+
+                                            {{ $notification->created_at->diffForHumans() }}
+
+                                            <span class="unread-label">
+
+                                                · Belum dibaca
+
+                                            </span>
+
+                                        </div>
+
+                                    </div>
+
+                                </button>
+
+                            </form>
+
+
+                        @else
+
+                            <!-- NOTIFIKASI SUDAH DIBACA -->
+
+                            <div
+                                class="notification-item"
+                            >
+
+                                <div class="notification-icon">
+
+                                    @if($notification->type === 'pembayaran_berhasil')
+
+                                        <i class="fa-solid fa-circle-check"></i>
+
+                                    @elseif($notification->type === 'pembayaran_diperbarui')
+
+                                        <i class="fa-solid fa-pen-to-square"></i>
+
+                                    @elseif($notification->type === 'pembayaran_dihapus')
+
+                                        <i class="fa-solid fa-trash"></i>
+
+                                    @elseif($notification->type === 'pengingat_pembayaran')
+
+                                        <i class="fa-solid fa-bell"></i>
+
+                                    @else
+
+                                        <i class="fa-solid fa-circle-info"></i>
+
+                                    @endif
+
+                                </div>
+
+
+                                <div class="notification-content">
+
+                                    <div class="notification-title">
+
+                                        {{ $notification->title }}
+
+                                    </div>
+
+
+                                    <div class="notification-text">
+
+                                        {{ $notification->message }}
+
+                                    </div>
+
+
+                                    <div class="notification-time">
+
+                                        {{ $notification->created_at->diffForHumans() }}
+
+                                        · Sudah dibaca
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        @endif
+
+
+                    @empty
+
+
+                        <div class="empty">
+
+                            <i class="fa-regular fa-bell-slash"></i>
+
+                            <br><br>
+
+                            Belum ada notifikasi.
 
                         </div>
 
 
-                        <div class="notification-content">
-
-
-                            <div class="notification-title">
-
-                                Informasi Kas
-
-                            </div>
-
-
-                            <div class="notification-text">
-
-                                Notifikasi pembayaran dan informasi kas
-                                akan muncul di bagian ini.
-
-                            </div>
-
-
-                            <div class="notification-time">
-
-                                Sistem MyCash
-
-                            </div>
-
-
-                        </div>
-
-
-                    </div>
+                    @endforelse
 
 
                 </div>

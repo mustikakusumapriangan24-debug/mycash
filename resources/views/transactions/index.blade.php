@@ -2,6 +2,14 @@
     $layout = auth()->user()->role === 'wali_kelas'
         ? 'layouts.wali-kelas'
         : 'layouts.bendahara';
+
+    $studentData = collect($students ?? [])->map(function ($student) {
+        return [
+            'id' => $student->id,
+            'name' => $student->name,
+            'nis' => $student->nis ?? '-',
+        ];
+    })->values()->all();
 @endphp
 
 @extends($layout)
@@ -9,26 +17,18 @@
 @section('content')
 
 <style>
-    /* =========================================================
-       MYCASH - TRANSAKSI
-       Mengikuti visual Dashboard & Status Pembayaran
-    ========================================================= */
-
     .transactions-page {
         --maroon: #803E2F;
         --maroon-dark: #54251F;
         --maroon-deep: #1F1D20;
         --gold: #B59A63;
-        --gold-soft: #D8D0C5;
         --cream: #F1ECE4;
         --white: #FFFEFC;
         --text: #3E3D38;
         --text-soft: #756E69;
         --border: #DED6CC;
-        --border-gold: rgba(181,154,99,.38);
         --green: #56856c;
         --red: #a65353;
-
         width: 100%;
         color: var(--text);
     }
@@ -46,39 +46,30 @@
         font-family: "Plus Jakarta Sans", sans-serif;
     }
 
-    /* =========================================================
-       TOP HEADER
-    ========================================================= */
+    .page-header { margin-bottom: 25px; }
 
-    .transactions-page .page-header {
-        margin-bottom: 28px;
-    }
-
-    .transactions-page .page-header-top {
+    .page-header-top {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
         gap: 20px;
     }
 
-    .transactions-page .page-title {
+    .page-title {
         margin: 0;
         color: var(--maroon-deep);
         font-family: "Playfair Display", serif;
         font-size: 31px;
         font-weight: 700;
-        letter-spacing: -.4px;
-        line-height: 1.2;
     }
 
-    .transactions-page .page-subtitle {
+    .page-subtitle {
         margin: 8px 0 0;
         color: var(--text-soft);
         font-size: 13px;
-        line-height: 1.6;
     }
 
-    .transactions-page .gold-line {
+    .gold-line {
         width: 42px;
         height: 3px;
         margin-top: 15px;
@@ -86,13 +77,13 @@
         background: var(--gold);
     }
 
-    .transactions-page .header-actions {
+    .header-actions {
         display: flex;
         align-items: center;
         gap: 12px;
     }
 
-    .transactions-page .class-info {
+    .class-info {
         display: flex;
         align-items: center;
         gap: 11px;
@@ -104,7 +95,7 @@
         box-shadow: 0 5px 18px rgba(31,29,32,.04);
     }
 
-    .transactions-page .class-icon {
+    .class-icon {
         width: 32px;
         height: 32px;
         display: flex;
@@ -115,20 +106,20 @@
         color: var(--maroon);
     }
 
-    .transactions-page .class-label {
+    .class-label {
         display: block;
         margin-bottom: 2px;
         color: var(--text-soft);
         font-size: 9px;
     }
 
-    .transactions-page .class-name {
+    .class-name {
         color: var(--maroon-deep);
         font-size: 12px;
         font-weight: 800;
     }
 
-    .transactions-page .notification-button {
+    .notification-button {
         width: 42px;
         height: 42px;
         display: flex;
@@ -139,14 +130,9 @@
         background: var(--white);
         color: var(--maroon);
         cursor: pointer;
-        box-shadow: 0 5px 18px rgba(31,29,32,.04);
     }
 
-    /* =========================================================
-       ACTION BUTTON
-    ========================================================= */
-
-    .transactions-page .add-button {
+    .add-button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -161,54 +147,45 @@
         font-weight: 800;
         cursor: pointer;
         box-shadow: 0 7px 18px rgba(128,62,47,.16);
-        transition: .2s ease;
     }
 
-    .transactions-page .add-button:hover {
+    .add-button:hover,
+    .submit-button:hover {
         background: var(--maroon-dark);
-        transform: translateY(-1px);
     }
 
-    /* =========================================================
-       ALERT
-    ========================================================= */
-
-    .transactions-page .alert {
+    .alert {
         margin-bottom: 18px;
         padding: 13px 16px;
         border-radius: 11px;
         font-size: 12px;
     }
 
-    .transactions-page .alert-success {
+    .alert-success {
         color: #3f6d55;
         background: #edf4ef;
         border: 1px solid #d2e3d7;
     }
 
-    .transactions-page .alert-error {
+    .alert-error {
         color: #934c4c;
         background: #faf0ef;
         border: 1px solid #ead3d0;
     }
 
-    .transactions-page .alert-error ul {
+    .alert-error ul {
         margin: 0;
         padding-left: 18px;
     }
 
-    /* =========================================================
-       SUMMARY
-    ========================================================= */
-
-    .transactions-page .summary-grid {
+    .summary-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 14px;
         margin-bottom: 22px;
     }
 
-    .transactions-page .summary-card {
+    .summary-card {
         min-height: 132px;
         padding: 21px 22px;
         background: var(--white);
@@ -217,63 +194,46 @@
         box-shadow: 0 7px 22px rgba(31,29,32,.045);
     }
 
-    .transactions-page .summary-card:first-child {
-        background: linear-gradient(
-            145deg,
-            #6d3529,
-            #54251F
-        );
+    .summary-card:first-child {
+        background: linear-gradient(145deg,#6d3529,#54251F);
         border-color: transparent;
         color: #fff;
     }
 
-    .transactions-page .summary-label {
+    .summary-label {
         margin-bottom: 10px;
         color: var(--text-soft);
         font-size: 10px;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: .3px;
     }
 
-    .transactions-page .summary-card:first-child .summary-label {
+    .summary-card:first-child .summary-label {
         color: rgba(255,255,255,.8);
     }
 
-    .transactions-page .summary-value {
+    .summary-value {
         color: var(--maroon-deep);
         font-family: "Playfair Display", serif;
         font-size: 25px;
         font-weight: 700;
     }
 
-    .transactions-page .summary-card:first-child .summary-value {
-        color: #fff;
-    }
+    .summary-card:first-child .summary-value { color: #fff; }
+    .summary-income .summary-value { color: var(--green); }
+    .summary-expense .summary-value { color: var(--red); }
 
-    .transactions-page .summary-income .summary-value {
-        color: var(--green);
-    }
-
-    .transactions-page .summary-expense .summary-value {
-        color: var(--red);
-    }
-
-    .transactions-page .summary-note {
+    .summary-note {
         margin-top: 8px;
         color: var(--text-soft);
         font-size: 10px;
     }
 
-    .transactions-page .summary-card:first-child .summary-note {
+    .summary-card:first-child .summary-note {
         color: rgba(255,255,255,.72);
     }
 
-    /* =========================================================
-       HISTORY CARD
-    ========================================================= */
-
-    .transactions-page .history-card {
+    .history-card {
         overflow: hidden;
         background: var(--white);
         border: 1px solid var(--border);
@@ -281,30 +241,30 @@
         box-shadow: 0 9px 28px rgba(31,29,32,.05);
     }
 
-    .transactions-page .history-header {
+    .history-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 20px;
+        gap: 18px;
         padding: 23px 26px;
         border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
     }
 
-    .transactions-page .history-title {
+    .history-title {
         margin: 0;
         color: var(--maroon-deep);
         font-family: "Playfair Display", serif;
         font-size: 20px;
-        font-weight: 700;
     }
 
-    .transactions-page .history-description {
+    .history-description {
         margin: 5px 0 0;
         color: var(--text-soft);
         font-size: 11px;
     }
 
-    .transactions-page .history-count {
+    .history-count {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -319,22 +279,88 @@
         font-weight: 800;
     }
 
-    /* =========================================================
-       TABLE
-    ========================================================= */
+    .filter-form {
+        display: flex;
+        align-items: flex-end;
+        gap: 9px;
+        flex-wrap: wrap;
+        width: 100%;
+    }
 
-    .transactions-page .table-wrapper {
+    .filter-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .filter-label {
+        color: var(--text-soft);
+        font-size: 9px;
+        font-weight: 800;
+    }
+
+    .search-input,
+    .filter-select,
+    .filter-date {
+        min-width: 145px;
+        max-width: 100%;
+        padding: 10px 11px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        outline: none;
+        background: #fff;
+        color: var(--text);
+        font-size: 10px;
+    }
+
+    .search-input { width: 230px; }
+
+    .search-input:focus,
+    .filter-select:focus,
+    .filter-date:focus {
+        border-color: var(--gold);
+        box-shadow: 0 0 0 3px rgba(181,154,99,.12);
+    }
+
+    .search-button,
+    .reset-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 10px 13px;
+        border-radius: 9px;
+        font-size: 10px;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .search-button {
+        border: 1px solid var(--maroon);
+        background: var(--maroon);
+        color: white;
+    }
+
+    .reset-button {
+        border: 1px solid var(--border);
+        background: white;
+        color: var(--text);
+    }
+
+    .table-wrapper {
         width: 100%;
         overflow-x: auto;
     }
 
-    .transactions-page .transaction-table {
+    .transaction-table {
         width: 100%;
         min-width: 900px;
         border-collapse: collapse;
     }
 
-    .transactions-page .transaction-table th {
+    .transaction-table th {
         padding: 13px 17px;
         background: #f7f3ed;
         color: var(--text-soft);
@@ -342,12 +368,11 @@
         font-size: 9px;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: .35px;
         text-align: left;
         white-space: nowrap;
     }
 
-    .transactions-page .transaction-table td {
+    .transaction-table td {
         padding: 14px 17px;
         border-bottom: 1px solid #eee9e2;
         color: var(--text);
@@ -355,31 +380,22 @@
         vertical-align: middle;
     }
 
-    .transactions-page .transaction-table tbody tr {
-        transition: .15s ease;
-    }
+    .transaction-table tbody tr:hover { background: #fbf8f4; }
+    .transaction-table tbody tr:last-child td { border-bottom: none; }
 
-    .transactions-page .transaction-table tbody tr:hover {
-        background: #fbf8f4;
-    }
-
-    .transactions-page .transaction-table tbody tr:last-child td {
-        border-bottom: none;
-    }
-
-    .transactions-page .date-main {
+    .date-main {
         color: var(--text);
         font-size: 11px;
         font-weight: 700;
     }
 
-    .transactions-page .date-time {
+    .date-time {
         margin-top: 3px;
         color: var(--text-soft);
         font-size: 9px;
     }
 
-    .transactions-page .transaction-description {
+    .transaction-description {
         max-width: 260px;
         color: var(--text);
         font-size: 11px;
@@ -387,12 +403,12 @@
         line-height: 1.5;
     }
 
-    .transactions-page .transaction-description.empty {
+    .transaction-description.empty {
         color: var(--text-soft);
         font-weight: 400;
     }
 
-    .transactions-page .category-badge {
+    .category-badge {
         display: inline-flex;
         align-items: center;
         padding: 5px 8px;
@@ -405,7 +421,7 @@
         white-space: nowrap;
     }
 
-    .transactions-page .type-badge {
+    .type-badge {
         display: inline-flex;
         align-items: center;
         gap: 4px;
@@ -416,44 +432,35 @@
         white-space: nowrap;
     }
 
-    .transactions-page .type-income {
+    .type-income {
         color: var(--green);
         background: #edf4ef;
         border: 1px solid #d4e4d9;
     }
 
-    .transactions-page .type-expense {
+    .type-expense {
         color: var(--red);
         background: #faf0ef;
         border: 1px solid #ead5d1;
     }
 
-    .transactions-page .amount {
+    .amount {
         font-size: 11px;
         font-weight: 800;
         white-space: nowrap;
     }
 
-    .transactions-page .amount-income {
-        color: var(--green);
-    }
+    .amount-income { color: var(--green); }
+    .amount-expense { color: var(--red); }
 
-    .transactions-page .amount-expense {
-        color: var(--red);
-    }
-
-    /* =========================================================
-       ACTION
-    ========================================================= */
-
-    .transactions-page .action-group {
+    .action-group {
         display: flex;
         align-items: center;
         gap: 5px;
         white-space: nowrap;
     }
 
-    .transactions-page .action-button {
+    .action-button {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -462,39 +469,26 @@
         font-size: 9px;
         font-weight: 800;
         cursor: pointer;
-        transition: .2s ease;
     }
 
-    .transactions-page .edit-button {
+    .edit-button {
         background: #f6f1e9;
         border: 1px solid #e5dac9;
         color: var(--maroon);
     }
 
-    .transactions-page .edit-button:hover {
-        background: #eee5d8;
-    }
-
-    .transactions-page .delete-button {
+    .delete-button {
         background: #faf0ef;
         border: 1px solid #ead5d1;
         color: var(--red);
     }
 
-    .transactions-page .delete-button:hover {
-        background: #f4e2df;
-    }
-
-    /* =========================================================
-       EMPTY
-    ========================================================= */
-
-    .transactions-page .empty-state {
+    .empty-state {
         padding: 60px 25px;
         text-align: center;
     }
 
-    .transactions-page .empty-icon {
+    .empty-icon {
         width: 54px;
         height: 54px;
         display: flex;
@@ -508,23 +502,74 @@
         font-size: 22px;
     }
 
-    .transactions-page .empty-title {
+    .empty-title {
         margin: 0;
         color: var(--maroon-deep);
         font-family: "Playfair Display", serif;
         font-size: 17px;
     }
 
-    .transactions-page .empty-description {
+    .empty-description {
         margin: 7px 0 0;
         color: var(--text-soft);
         font-size: 11px;
     }
 
-    /* =========================================================
-       MODAL
-    ========================================================= */
+    /* PAGINATION */
+    .pagination-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 7px;
+        flex-wrap: wrap;
+        padding: 18px;
+        border-top: 1px solid var(--border);
+    }
 
+    .pagination-arrow,
+    .pagination-page {
+        min-width: 35px;
+        height: 35px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 10px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: white;
+        color: var(--maroon);
+        font-size: 11px;
+        font-weight: 700;
+        text-decoration: none;
+        transition: .2s ease;
+    }
+
+    .pagination-arrow:hover,
+    .pagination-page:hover {
+        background: #f6f1e9;
+        border-color: var(--gold);
+    }
+
+    .pagination-page.active {
+        background: var(--maroon);
+        border-color: var(--maroon);
+        color: white;
+        cursor: default;
+    }
+
+    .pagination-arrow.disabled {
+        opacity: .35;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    .pagination-info {
+        margin-left: 8px;
+        color: var(--text-soft);
+        font-size: 10px;
+    }
+
+    /* MODAL */
     .transactions-modal {
         position: fixed;
         inset: 0;
@@ -537,9 +582,7 @@
         backdrop-filter: blur(4px);
     }
 
-    .transactions-modal.show {
-        display: flex;
-    }
+    .transactions-modal.show { display: flex; }
 
     .transactions-modal .modal {
         width: 100%;
@@ -552,7 +595,7 @@
         box-shadow: 0 25px 70px rgba(31,29,32,.2);
     }
 
-    .transactions-modal .modal-header {
+    .modal-header {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
@@ -561,20 +604,20 @@
         border-bottom: 1px solid var(--border);
     }
 
-    .transactions-modal .modal-title {
+    .modal-title {
         margin: 0;
         color: var(--maroon-deep);
         font-family: "Playfair Display", serif;
         font-size: 20px;
     }
 
-    .transactions-modal .modal-description {
+    .modal-description {
         margin: 5px 0 0;
         color: var(--text-soft);
         font-size: 11px;
     }
 
-    .transactions-modal .close-button {
+    .close-button {
         width: 32px;
         height: 32px;
         display: flex;
@@ -588,19 +631,10 @@
         cursor: pointer;
     }
 
-    .transactions-modal .modal-body {
-        padding: 23px 25px 25px;
-    }
+    .modal-body { padding: 23px 25px 25px; }
+    .form-group { margin-bottom: 17px; }
 
-    /* =========================================================
-       FORM
-    ========================================================= */
-
-    .transactions-modal .form-group {
-        margin-bottom: 17px;
-    }
-
-    .transactions-modal .form-label {
+    .form-label {
         display: block;
         margin-bottom: 7px;
         color: var(--text);
@@ -608,9 +642,7 @@
         font-weight: 800;
     }
 
-    .transactions-modal .required {
-        color: var(--maroon);
-    }
+    .required { color: var(--maroon); }
 
     .transactions-modal input,
     .transactions-modal select,
@@ -637,27 +669,21 @@
         resize: vertical;
     }
 
-    /* =========================================================
-       RADIO
-    ========================================================= */
-
-    .transactions-modal .radio-group {
+    .radio-group {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 9px;
     }
 
-    .transactions-modal .radio-option {
-        position: relative;
-    }
+    .radio-option { position: relative; }
 
-    .transactions-modal .radio-option input {
+    .radio-option input {
         position: absolute;
         opacity: 0;
         pointer-events: none;
     }
 
-    .transactions-modal .radio-label {
+    .radio-label {
         display: flex;
         align-items: center;
         justify-content: center;
@@ -671,33 +697,20 @@
         cursor: pointer;
     }
 
-    .transactions-modal .radio-option input:checked + .radio-label {
+    .radio-option input:checked + .radio-label {
         border-color: var(--maroon);
         background: rgba(128,62,47,.06);
         color: var(--maroon);
     }
 
-    /* =========================================================
-       STUDENT
-    ========================================================= */
+    .student-section { display: none; }
+    .student-section.show { display: block; }
 
-    .transactions-modal .student-section {
-        display: none;
-    }
+    .student-search-wrapper { position: relative; }
 
-    .transactions-modal .student-section.show {
-        display: block;
-    }
+    .student-search { padding-left: 38px !important; }
 
-    .transactions-modal .student-search-wrapper {
-        position: relative;
-    }
-
-    .transactions-modal .student-search {
-        padding-left: 38px;
-    }
-
-    .transactions-modal .search-icon {
+    .search-icon {
         position: absolute;
         left: 13px;
         top: 50%;
@@ -706,7 +719,7 @@
         pointer-events: none;
     }
 
-    .transactions-modal .student-results {
+    .student-results {
         position: absolute;
         left: 0;
         right: 0;
@@ -721,40 +734,36 @@
         box-shadow: 0 12px 30px rgba(31,29,32,.1);
     }
 
-    .transactions-modal .student-results.show {
-        display: block;
-    }
+    .student-results.show { display: block; }
 
-    .transactions-modal .student-result {
+    .student-result {
         padding: 11px 13px;
         border-bottom: 1px solid #eee9e2;
         cursor: pointer;
     }
 
-    .transactions-modal .student-result:hover {
-        background: #f8f4ee;
-    }
+    .student-result:hover { background: #f8f4ee; }
 
-    .transactions-modal .student-name {
+    .student-name {
         color: var(--text);
         font-size: 11px;
         font-weight: 800;
     }
 
-    .transactions-modal .student-nis {
+    .student-nis {
         margin-top: 3px;
         color: var(--text-soft);
         font-size: 9px;
     }
 
-    .transactions-modal .no-result {
+    .no-result {
         padding: 13px;
         color: var(--text-soft);
         font-size: 10px;
         text-align: center;
     }
 
-    .transactions-modal .selected-student {
+    .selected-student {
         display: none;
         align-items: center;
         justify-content: space-between;
@@ -766,23 +775,21 @@
         background: #f6f1e9;
     }
 
-    .transactions-modal .selected-student.show {
-        display: flex;
-    }
+    .selected-student.show { display: flex; }
 
-    .transactions-modal .selected-name {
+    .selected-name {
         color: var(--maroon-deep);
         font-size: 11px;
         font-weight: 800;
     }
 
-    .transactions-modal .selected-nis {
+    .selected-nis {
         margin-top: 3px;
         color: var(--text-soft);
         font-size: 9px;
     }
 
-    .transactions-modal .change-student {
+    .change-student {
         border: none;
         background: transparent;
         color: var(--maroon);
@@ -791,15 +798,9 @@
         cursor: pointer;
     }
 
-    /* =========================================================
-       AMOUNT / INFO
-    ========================================================= */
+    .amount-wrapper { position: relative; }
 
-    .transactions-modal .amount-wrapper {
-        position: relative;
-    }
-
-    .transactions-modal .amount-prefix {
+    .amount-prefix {
         position: absolute;
         left: 13px;
         top: 50%;
@@ -810,17 +811,15 @@
         pointer-events: none;
     }
 
-    .transactions-modal .amount-input {
-        padding-left: 37px;
-    }
+    .amount-input { padding-left: 37px !important; }
 
-    .transactions-modal .helper-text {
+    .helper-text {
         margin-top: 5px;
         color: var(--text-soft);
         font-size: 9px;
     }
 
-    .transactions-modal .edit-info {
+    .edit-info {
         margin-bottom: 17px;
         padding: 12px 13px;
         border: 1px solid #e5dac9;
@@ -828,34 +827,29 @@
         background: #f6f1e9;
     }
 
-    .transactions-modal .edit-info-label {
+    .edit-info-label {
         margin-bottom: 4px;
         color: var(--text-soft);
         font-size: 8px;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: .4px;
     }
 
-    .transactions-modal .edit-info-value {
+    .edit-info-value {
         color: var(--maroon-deep);
         font-size: 11px;
         font-weight: 800;
     }
 
-    /* =========================================================
-       FOOTER
-    ========================================================= */
-
-    .transactions-modal .modal-footer {
+    .modal-footer {
         display: flex;
         justify-content: flex-end;
         gap: 8px;
         margin-top: 7px;
     }
 
-    .transactions-modal .cancel-button,
-    .transactions-modal .submit-button {
+    .cancel-button,
+    .submit-button {
         padding: 10px 15px;
         border-radius: 10px;
         font-size: 11px;
@@ -863,421 +857,333 @@
         cursor: pointer;
     }
 
-    .transactions-modal .cancel-button {
+    .cancel-button {
         border: 1px solid var(--border);
         background: #fff;
         color: var(--text);
     }
 
-    .transactions-modal .submit-button {
+    .submit-button {
         border: none;
         background: var(--maroon);
         color: #fff;
     }
 
-    .transactions-modal .submit-button:hover {
-        background: var(--maroon-dark);
-    }
-
-    /* =========================================================
-       RESPONSIVE
-    ========================================================= */
-
     @media (max-width: 900px) {
-        .transactions-page .summary-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .transactions-page .page-header-top {
-            flex-direction: column;
-        }
+        .summary-grid { grid-template-columns: 1fr; }
+        .page-header-top { flex-direction: column; }
     }
 
     @media (max-width: 650px) {
-        .transactions-page .page-title {
-            font-size: 25px;
-        }
-
-        .transactions-page .header-actions {
-            width: 100%;
-        }
-
-        .transactions-page .class-info {
-            flex: 1;
-        }
-
-        .transactions-page .radio-group {
-            grid-template-columns: 1fr;
-        }
-
-        .transactions-modal {
-            padding: 10px;
-        }
-
+        .page-title { font-size: 25px; }
+        .header-actions { width: 100%; }
+        .class-info { flex: 1; }
+        .filter-form { align-items: stretch; }
+        .filter-field { width: 100%; }
+        .search-input,
+        .filter-select,
+        .filter-date { width: 100%; }
+        .radio-group { grid-template-columns: 1fr; }
+        .transactions-modal { padding: 10px; }
         .transactions-modal .modal {
             max-height: calc(100vh - 20px);
             border-radius: 15px;
         }
+        .modal-footer { flex-direction: column-reverse; }
+        .cancel-button,
+        .submit-button { width: 100%; }
 
-        .transactions-modal .modal-footer {
-            flex-direction: column-reverse;
+        .pagination-wrapper {
+            gap: 5px;
+            padding: 15px 8px;
         }
 
-        .transactions-modal .cancel-button,
-        .transactions-modal .submit-button {
+        .pagination-arrow,
+        .pagination-page {
+            min-width: 32px;
+            height: 32px;
+            padding: 0 8px;
+        }
+
+        .pagination-info {
             width: 100%;
+            margin: 7px 0 0;
+            text-align: center;
         }
     }
 </style>
 
-
 <div class="transactions-page">
 
-    {{-- =====================================================
-         HEADER
-    ====================================================== --}}
-
+    {{-- HEADER --}}
     <div class="page-header">
-
         <div class="page-header-top">
-
             <div>
-
-                <h1 class="page-title">
-                    Transaksi Kas
-                </h1>
-
+                <h1 class="page-title">Transaksi Kas</h1>
                 <p class="page-subtitle">
                     Kelola dan pantau seluruh transaksi kas MyCash.
                 </p>
-
                 <div class="gold-line"></div>
-
             </div>
 
-
             <div class="header-actions">
-
                 <div class="class-info">
-
                     <div class="class-icon">
                         <i class="fa-solid fa-users"></i>
                     </div>
-
                     <div>
-                        <span class="class-label">
-                            Kelas
-                        </span>
-
-                        <span class="class-name">
-                            XI RPL 1
-                        </span>
+                        <span class="class-label">Kelas</span>
+                        <span class="class-name">XI RPL 1</span>
                     </div>
-
                 </div>
 
-
-                <button
-                    type="button"
-                    class="notification-button"
-                >
+                <button type="button" class="notification-button">
                     <i class="fa-regular fa-bell"></i>
                 </button>
-
             </div>
-
         </div>
 
-
-        <button
-            type="button"
-            class="add-button"
-            id="openModalButton"
-        >
+        <button type="button" class="add-button" id="openModalButton">
             <i class="fa-solid fa-plus"></i>
             Tambah Transaksi
         </button>
-
     </div>
 
-
-    {{-- =====================================================
-         ALERT
-    ====================================================== --}}
-
+    {{-- ALERT --}}
     @if(session('success'))
-
         <div class="alert alert-success">
             {{ session('success') }}
         </div>
-
     @endif
-
 
     @if($errors->any())
-
         <div class="alert alert-error">
-
             <ul>
-
                 @foreach($errors->all() as $error)
-
                     <li>{{ $error }}</li>
-
                 @endforeach
-
             </ul>
-
         </div>
-
     @endif
 
-
-    {{-- =====================================================
-         SUMMARY
-    ====================================================== --}}
-
-    @php
-
-        $totalIncome = collect($transactions ?? [])
-            ->where('type', 'in')
-            ->sum('amount');
-
-        $totalExpense = collect($transactions ?? [])
-            ->where('type', 'out')
-            ->sum('amount');
-
-        $totalBalance =
-            $totalIncome - $totalExpense;
-
-    @endphp
-
-
+    {{-- RINGKASAN --}}
     <div class="summary-grid">
-
         <div class="summary-card">
-
-            <div class="summary-label">
-                Total Pemasukan
-            </div>
-
+            <div class="summary-label">Total Pemasukan</div>
             <div class="summary-value">
-                Rp {{ number_format($totalIncome, 0, ',', '.') }}
+                Rp {{ number_format($totalPemasukan, 0, ',', '.') }}
             </div>
-
-            <div class="summary-note">
-                Total kas masuk
-            </div>
-
+            <div class="summary-note">Total kas masuk</div>
         </div>
-
 
         <div class="summary-card summary-income">
-
-            <div class="summary-label">
-                Total Pengeluaran
-            </div>
-
+            <div class="summary-label">Total Pengeluaran</div>
             <div class="summary-value">
-                Rp {{ number_format($totalExpense, 0, ',', '.') }}
+                Rp {{ number_format($totalPengeluaran, 0, ',', '.') }}
             </div>
-
-            <div class="summary-note">
-                Total kas keluar
-            </div>
-
+            <div class="summary-note">Total kas keluar</div>
         </div>
-
 
         <div class="summary-card summary-expense">
-
-            <div class="summary-label">
-                Saldo Bersih
-            </div>
-
+            <div class="summary-label">Saldo Bersih</div>
             <div class="summary-value">
-                Rp {{ number_format($totalBalance, 0, ',', '.') }}
+                Rp {{ number_format($totalSaldo, 0, ',', '.') }}
             </div>
-
-            <div class="summary-note">
-                Pemasukan − Pengeluaran
-            </div>
-
+            <div class="summary-note">Pemasukan − Pengeluaran</div>
         </div>
-
     </div>
 
-
-    {{-- =====================================================
-         RIWAYAT TRANSAKSI
-    ====================================================== --}}
-
+    {{-- RIWAYAT TRANSAKSI --}}
     <div class="history-card">
-
         <div class="history-header">
-
             <div>
-
-                <h2 class="history-title">
-                    Riwayat Transaksi
-                </h2>
-
+                <h2 class="history-title">Riwayat Transaksi</h2>
                 <p class="history-description">
                     Daftar pemasukan dan pengeluaran yang telah dicatat.
                 </p>
-
             </div>
 
             <div class="history-count">
-                {{ collect($transactions ?? [])->count() }}
-                Transaksi
+                {{ $transactions->total() }} Transaksi
             </div>
 
+            {{-- FORM FILTER --}}
+            <form
+                action="{{ route('transactions.index') }}"
+                method="GET"
+                class="filter-form"
+            >
+                <input
+                    type="hidden"
+                    name="year"
+                    value="{{ $selectedYear }}"
+                >
+
+                <div class="filter-field">
+                    <label class="filter-label">Pencarian</label>
+                    <input
+                        type="text"
+                        name="search"
+                        class="search-input"
+                        placeholder="Cari kategori atau keterangan..."
+                        value="{{ $search ?? '' }}"
+                    >
+                </div>
+
+                <div class="filter-field">
+                    <label class="filter-label">Jenis Transaksi</label>
+                    <select name="type" class="filter-select">
+                        <option value="">Semua Jenis</option>
+                        <option value="in" {{ ($type ?? '') === 'in' ? 'selected' : '' }}>
+                            Kas Masuk (+)
+                        </option>
+                        <option value="out" {{ ($type ?? '') === 'out' ? 'selected' : '' }}>
+                            Kas Keluar (-)
+                        </option>
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label class="filter-label">Kategori</label>
+                    <select name="category" class="filter-select">
+                        <option value="">Semua Kategori</option>
+
+                        <optgroup label="Pemasukan">
+                            @foreach($incomeCategories as $item)
+                                <option
+                                    value="{{ $item }}"
+                                    {{ ($category ?? '') === $item ? 'selected' : '' }}
+                                >
+                                    {{ $item }}
+                                </option>
+                            @endforeach
+                        </optgroup>
+
+                        <optgroup label="Pengeluaran">
+                            @foreach($expenseCategories as $item)
+                                <option
+                                    value="{{ $item }}"
+                                    {{ ($category ?? '') === $item ? 'selected' : '' }}
+                                >
+                                    {{ $item }}
+                                </option>
+                            @endforeach
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label class="filter-label">Dari Tanggal</label>
+                    <input
+                        type="date"
+                        name="from_date"
+                        class="filter-date"
+                        value="{{ $fromDate ?? '' }}"
+                    >
+                </div>
+
+                <div class="filter-field">
+                    <label class="filter-label">Sampai Tanggal</label>
+                    <input
+                        type="date"
+                        name="to_date"
+                        class="filter-date"
+                        value="{{ $toDate ?? '' }}"
+                    >
+                </div>
+
+                <button type="submit" class="search-button">
+                    <i class="fa-solid fa-filter"></i>
+                    Filter
+                </button>
+
+                <a
+                    href="{{ route('transactions.index', ['year' => $selectedYear]) }}"
+                    class="reset-button"
+                >
+                    <i class="fa-solid fa-rotate-left"></i>
+                    Reset Filter
+                </a>
+            </form>
         </div>
 
-
-        @if(collect($transactions ?? [])->count() > 0)
-
+        {{-- TABEL TRANSAKSI --}}
+        @if($transactions->count() > 0)
             <div class="table-wrapper">
-
                 <table class="transaction-table">
-
                     <thead>
-
                         <tr>
-
                             <th>Tanggal</th>
-
                             <th>Jenis</th>
-
                             <th>Kategori</th>
-
                             <th>Siswa / Keterangan</th>
-
                             <th>Nominal</th>
-
                             <th>Aksi</th>
-
                         </tr>
-
                     </thead>
 
-
                     <tbody>
-
                         @foreach($transactions as $transaction)
-
                             <tr>
-
                                 <td>
-
                                     <div class="date-main">
-
-                                        {{ $transaction->created_at
-                                            ? $transaction->created_at->format('d M Y')
-                                            : '-'
-                                        }}
-
+                                        {{ $transaction->created_at ? $transaction->created_at->format('d M Y') : '-' }}
                                     </div>
-
                                     <div class="date-time">
-
-                                        {{ $transaction->created_at
-                                            ? $transaction->created_at->format('H:i')
-                                            : '-'
-                                        }}
-
+                                        {{ $transaction->created_at ? $transaction->created_at->format('H:i') : '-' }}
                                     </div>
-
                                 </td>
 
-
                                 <td>
-
                                     @if($transaction->type === 'in')
-
                                         <span class="type-badge type-income">
                                             ↑ Pemasukan
                                         </span>
-
                                     @else
-
                                         <span class="type-badge type-expense">
                                             ↓ Pengeluaran
                                         </span>
-
                                     @endif
-
                                 </td>
 
-
                                 <td>
-
                                     <span class="category-badge">
-                                        {{ $transaction->category ?? '-' }}
+                                        @if($transaction->category === 'Kas Siswa')
+                                            Iuran Kas Siswa
+                                        @elseif($transaction->category === 'Lainnya')
+                                            Pemasukan Lainnya
+                                        @else
+                                            {{ $transaction->category ?? '-' }}
+                                        @endif
                                     </span>
-
                                 </td>
 
-
                                 <td>
-
                                     @if($transaction->description)
-
                                         <div class="transaction-description">
                                             {{ $transaction->description }}
                                         </div>
-
                                     @else
-
                                         <div class="transaction-description empty">
                                             Tidak ada keterangan
                                         </div>
-
                                     @endif
-
                                 </td>
 
-
                                 <td>
-
                                     @if($transaction->type === 'in')
-
                                         <span class="amount amount-income">
-
-                                            + Rp
-                                            {{ number_format(
-                                                $transaction->amount,
-                                                0,
-                                                ',',
-                                                '.'
-                                            ) }}
-
+                                            + Rp {{ number_format($transaction->amount, 0, ',', '.') }}
                                         </span>
-
                                     @else
-
                                         <span class="amount amount-expense">
-
-                                            - Rp
-                                            {{ number_format(
-                                                $transaction->amount,
-                                                0,
-                                                ',',
-                                                '.'
-                                            ) }}
-
+                                            - Rp {{ number_format($transaction->amount, 0, ',', '.') }}
                                         </span>
-
                                     @endif
-
                                 </td>
 
-
                                 <td>
-
                                     <div class="action-group">
-
                                         <button
                                             type="button"
                                             class="action-button edit-button"
@@ -1292,20 +1198,16 @@
                                             Edit
                                         </button>
 
-
                                         <form
                                             action="{{ route('transactions.destroy', $transaction->id) }}"
                                             method="POST"
                                             onsubmit="return confirmDelete(
-                                                '{{ $transaction->category === 'Kas Siswa'
+                                                @js($transaction->category === 'Kas Siswa'
                                                     ? 'Transaksi Kas Siswa ini akan dihapus dan alokasi pembayaran yang terhubung akan dikosongkan.'
-                                                    : 'Transaksi ini akan dihapus.'
-                                                }}'
+                                                    : 'Transaksi ini akan dihapus.')
                                             )"
                                         >
-
                                             @csrf
-
                                             @method('DELETE')
 
                                             <button
@@ -1314,110 +1216,130 @@
                                             >
                                                 Hapus
                                             </button>
-
                                         </form>
-
                                     </div>
-
                                 </td>
-
                             </tr>
-
                         @endforeach
-
                     </tbody>
-
                 </table>
-
             </div>
-
         @else
-
             <div class="empty-state">
-
                 <div class="empty-icon">
                     <i class="fa-solid fa-receipt"></i>
                 </div>
 
                 <h3 class="empty-title">
-                    Belum Ada Transaksi
+                    Transaksi Tidak Ditemukan
                 </h3>
 
                 <p class="empty-description">
-                    Belum ada transaksi yang tercatat.
-                    Klik tombol Tambah Transaksi untuk mulai mencatat.
+                    Tidak ada transaksi yang sesuai dengan pencarian atau filter.
                 </p>
-
             </div>
-
         @endif
 
-    </div>
+        {{-- PAGINATION --}}
+        @if($transactions->hasPages())
+            <div class="pagination-wrapper">
 
+                {{-- TOMBOL SEBELUMNYA --}}
+                @if($transactions->onFirstPage())
+                    <span class="pagination-arrow disabled">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </span>
+                @else
+                    <a
+                        href="{{ $transactions->previousPageUrl() }}"
+                        class="pagination-arrow"
+                        aria-label="Halaman sebelumnya"
+                    >
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </a>
+                @endif
+
+                {{-- NOMOR HALAMAN --}}
+                @foreach(
+                    $transactions->getUrlRange(
+                        max(1, $transactions->currentPage() - 2),
+                        min($transactions->lastPage(), $transactions->currentPage() + 2)
+                    ) as $page => $url
+                )
+                    @if($transactions->currentPage() == $page)
+                        <span
+                            class="pagination-page active"
+                            aria-current="page"
+                        >
+                            {{ $page }}
+                        </span>
+                    @else
+                        <a
+                            href="{{ $url }}"
+                            class="pagination-page"
+                            aria-label="Halaman {{ $page }}"
+                        >
+                            {{ $page }}
+                        </a>
+                    @endif
+                @endforeach
+
+                {{-- TOMBOL BERIKUTNYA --}}
+                @if($transactions->hasMorePages())
+                    <a
+                        href="{{ $transactions->nextPageUrl() }}"
+                        class="pagination-arrow"
+                        aria-label="Halaman berikutnya"
+                    >
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </a>
+                @else
+                    <span class="pagination-arrow disabled">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </span>
+                @endif
+
+                {{-- INFORMASI JUMLAH DATA --}}
+                <span class="pagination-info">
+                    Menampilkan
+                    {{ $transactions->firstItem() }}–{{ $transactions->lastItem() }}
+                    dari {{ $transactions->total() }} transaksi
+                </span>
+
+            </div>
+        @endif
+    </div>
 </div>
 
-
-{{-- =========================================================
-     MODAL TAMBAH
-========================================================= --}}
-
-<div
-    class="transactions-modal"
-    id="transactionModal"
->
-
-    <div
-        class="modal"
-        role="dialog"
-        aria-modal="true"
-    >
-
+{{-- MODAL TAMBAH TRANSAKSI --}}
+<div class="transactions-modal" id="transactionModal">
+    <div class="modal" role="dialog" aria-modal="true">
         <div class="modal-header">
-
             <div>
-
-                <h2 class="modal-title">
-                    Tambah Transaksi
-                </h2>
-
+                <h2 class="modal-title">Tambah Transaksi</h2>
                 <p class="modal-description">
                     Masukkan data transaksi kas yang ingin dicatat.
                 </p>
-
             </div>
 
-            <button
-                type="button"
-                class="close-button"
-                id="closeModalButton"
-            >
+            <button type="button" class="close-button" id="closeModalButton">
                 ×
             </button>
-
         </div>
 
-
         <div class="modal-body">
-
             <form
                 action="{{ route('transactions.store') }}"
                 method="POST"
                 id="transactionForm"
             >
-
                 @csrf
 
-
                 <div class="form-group">
-
-                    <label class="form-label">
-                        Jenis Transaksi
-                    </label>
+                    <label class="form-label">Jenis Transaksi</label>
 
                     <div class="radio-group">
-
                         <div class="radio-option">
-
                             <input
                                 type="radio"
                                 name="type"
@@ -1425,19 +1347,12 @@
                                 value="in"
                                 {{ old('type', 'in') === 'in' ? 'checked' : '' }}
                             >
-
-                            <label
-                                for="typeIn"
-                                class="radio-label"
-                            >
+                            <label for="typeIn" class="radio-label">
                                 Pemasukan
                             </label>
-
                         </div>
 
-
                         <div class="radio-option">
-
                             <input
                                 type="radio"
                                 name="type"
@@ -1445,55 +1360,27 @@
                                 value="out"
                                 {{ old('type') === 'out' ? 'checked' : '' }}
                             >
-
-                            <label
-                                for="typeOut"
-                                class="radio-label"
-                            >
+                            <label for="typeOut" class="radio-label">
                                 Pengeluaran
                             </label>
-
                         </div>
-
                     </div>
-
                 </div>
 
-
-                <div class="form-group">
-
-                    <label
-                        for="category"
-                        class="form-label"
-                    >
-                        Kategori
-                        <span class="required">*</span>
+                <div class="form-group" id="categorySection">
+                    <label for="category" class="form-label">
+                        Kategori <span class="required">*</span>
                     </label>
-
-                    <select
-                        name="category"
-                        id="category"
-                        required
-                    ></select>
-
+                    <select name="category" id="category" required></select>
                 </div>
 
-
-                <div
-                    class="form-group student-section"
-                    id="studentSection"
-                >
-
+                {{-- PILIH SISWA --}}
+                <div class="form-group student-section" id="studentSection">
                     <label class="form-label">
-
-                        Siswa
-                        <span class="required">*</span>
-
+                        Siswa <span class="required">*</span>
                     </label>
-
 
                     <div class="student-search-wrapper">
-
                         <span class="search-icon">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </span>
@@ -1502,7 +1389,7 @@
                             type="text"
                             id="studentSearch"
                             class="student-search"
-                            placeholder="Cari berdasarkan nama atau NIS siswa..."
+                            placeholder="Cari nama atau NIS siswa..."
                             autocomplete="off"
                         >
 
@@ -1510,9 +1397,7 @@
                             class="student-results"
                             id="studentResults"
                         ></div>
-
                     </div>
-
 
                     <input
                         type="hidden"
@@ -1521,24 +1406,10 @@
                         value="{{ old('student_id') }}"
                     >
 
-
-                    <div
-                        class="selected-student"
-                        id="selectedStudent"
-                    >
-
+                    <div class="selected-student" id="selectedStudent">
                         <div>
-
-                            <div
-                                class="selected-name"
-                                id="selectedStudentName"
-                            ></div>
-
-                            <div
-                                class="selected-nis"
-                                id="selectedStudentNis"
-                            ></div>
-
+                            <div class="selected-name" id="selectedStudentName"></div>
+                            <div class="selected-nis" id="selectedStudentNis"></div>
                         </div>
 
                         <button
@@ -1548,23 +1419,13 @@
                         >
                             Ganti
                         </button>
-
                     </div>
-
                 </div>
 
-
-                <div
-                    class="form-group student-section"
-                    id="paymentMonthSection"
-                >
-
-                    <label
-                        for="paymentMonth"
-                        class="form-label"
-                    >
-                        Bulan Pembayaran
-                        <span class="required">*</span>
+                {{-- BULAN PEMBAYARAN --}}
+                <div class="form-group student-section" id="paymentMonthSection">
+                    <label for="paymentMonth" class="form-label">
+                        Bulan Pembayaran <span class="required">*</span>
                     </label>
 
                     <input
@@ -1577,26 +1438,16 @@
                     <div class="helper-text">
                         Menunjukkan bulan saat pembayaran kas dilakukan.
                     </div>
-
                 </div>
 
-
+                {{-- NOMINAL --}}
                 <div class="form-group">
-
-                    <label
-                        for="amount"
-                        class="form-label"
-                    >
-                        Nominal
-                        <span class="required">*</span>
+                    <label for="amount" class="form-label">
+                        Nominal <span class="required">*</span>
                     </label>
 
                     <div class="amount-wrapper">
-
-                        <span class="amount-prefix">
-                            Rp
-                        </span>
-
+                        <span class="amount-prefix">Rp</span>
                         <input
                             type="number"
                             name="amount"
@@ -1608,25 +1459,16 @@
                             placeholder="0"
                             required
                         >
-
                     </div>
 
                     <div class="helper-text">
                         Masukkan nominal uang yang benar-benar dibayarkan.
                     </div>
-
                 </div>
 
-
-                <div
-                    class="form-group"
-                    id="descriptionSection"
-                >
-
-                    <label
-                        for="description"
-                        class="form-label"
-                    >
+                {{-- KETERANGAN --}}
+                <div class="form-group" id="descriptionSection">
+                    <label for="description" class="form-label">
                         Keterangan
                     </label>
 
@@ -1635,12 +1477,9 @@
                         id="description"
                         placeholder="Masukkan keterangan transaksi..."
                     >{{ old('description') }}</textarea>
-
                 </div>
 
-
                 <div class="modal-footer">
-
                     <button
                         type="button"
                         class="cancel-button"
@@ -1649,51 +1488,24 @@
                         Batal
                     </button>
 
-                    <button
-                        type="submit"
-                        class="submit-button"
-                    >
+                    <button type="submit" class="submit-button">
                         Simpan Transaksi
                     </button>
-
                 </div>
-
             </form>
-
         </div>
-
     </div>
-
 </div>
 
-
-{{-- =========================================================
-     MODAL EDIT
-========================================================= --}}
-
-<div
-    class="transactions-modal"
-    id="editModal"
->
-
-    <div
-        class="modal"
-        role="dialog"
-        aria-modal="true"
-    >
-
+{{-- MODAL EDIT TRANSAKSI --}}
+<div class="transactions-modal" id="editModal">
+    <div class="modal" role="dialog" aria-modal="true">
         <div class="modal-header">
-
             <div>
-
-                <h2 class="modal-title">
-                    Edit Transaksi
-                </h2>
-
+                <h2 class="modal-title">Edit Transaksi</h2>
                 <p class="modal-description">
                     Perbarui data transaksi yang telah dicatat.
                 </p>
-
             </div>
 
             <button
@@ -1703,99 +1515,39 @@
             >
                 ×
             </button>
-
         </div>
 
-
         <div class="modal-body">
-
-            <form
-                method="POST"
-                id="editTransactionForm"
-            >
-
+            <form method="POST" id="editTransactionForm">
                 @csrf
                 @method('PUT')
 
-
                 <div class="edit-info">
-
-                    <div class="edit-info-label">
-                        Jenis Transaksi
-                    </div>
-
-                    <div
-                        class="edit-info-value"
-                        id="editTransactionType"
-                    >
-                        -
-                    </div>
-
+                    <div class="edit-info-label">Jenis Transaksi</div>
+                    <div class="edit-info-value" id="editTransactionType">-</div>
                 </div>
 
-
-                <div class="form-group">
-
-                    <label
-                        for="editCategory"
-                        class="form-label"
-                    >
-                        Kategori
-                        <span class="required">*</span>
+                <div class="form-group" id="editCategorySection">
+                    <label for="editCategory" class="form-label">
+                        Kategori <span class="required">*</span>
                     </label>
 
                     <select
+                        name="category"
                         id="editCategory"
                         required
-                    >
+                    ></select>
 
-                        <option value="Kas Siswa">
-                            Kas Siswa
-                        </option>
-
-                        <option value="Iuran">
-                            Iuran
-                        </option>
-
-                        <option value="Operasional">
-                            Operasional
-                        </option>
-
-                        <option value="Kebutuhan Kelas">
-                            Kebutuhan Kelas
-                        </option>
-
-                        <option value="Lainnya">
-                            Lainnya
-                        </option>
-
-                    </select>
-
-                    <input
-                        type="hidden"
-                        name="category"
-                        id="editCategoryHidden"
-                    >
-
+                    <div class="helper-text" id="editCategoryHelp"></div>
                 </div>
 
-
                 <div class="form-group">
-
-                    <label
-                        for="editAmount"
-                        class="form-label"
-                    >
-                        Nominal
-                        <span class="required">*</span>
+                    <label for="editAmount" class="form-label">
+                        Nominal <span class="required">*</span>
                     </label>
 
                     <div class="amount-wrapper">
-
-                        <span class="amount-prefix">
-                            Rp
-                        </span>
-
+                        <span class="amount-prefix">Rp</span>
                         <input
                             type="number"
                             name="amount"
@@ -1805,21 +1557,11 @@
                             step="1"
                             required
                         >
-
                     </div>
-
                 </div>
 
-
-                <div
-                    class="form-group"
-                    id="editDescriptionSection"
-                >
-
-                    <label
-                        for="editDescription"
-                        class="form-label"
-                    >
+                <div class="form-group" id="editDescriptionSection">
+                    <label for="editDescription" class="form-label">
                         Keterangan
                     </label>
 
@@ -1828,12 +1570,9 @@
                         id="editDescription"
                         placeholder="Masukkan keterangan transaksi..."
                     ></textarea>
-
                 </div>
 
-
                 <div class="modal-footer">
-
                     <button
                         type="button"
                         class="cancel-button"
@@ -1842,111 +1581,262 @@
                         Batal
                     </button>
 
-                    <button
-                        type="submit"
-                        class="submit-button"
-                    >
+                    <button type="submit" class="submit-button">
                         Simpan Perubahan
                     </button>
-
                 </div>
-
             </form>
-
         </div>
-
     </div>
-
 </div>
 
-
 <script>
-    /* =========================================================
-       DATA SISWA
-    ========================================================= */
+    // DATA SISWA
+    const students = @json($studentData);
 
-    const students = {!! json_encode(
-        collect($students ?? [])->map(function ($student) {
-            return [
-                'id' => $student->id,
-                'name' => $student->name,
-                'nis' => $student->nis ?? '-',
-            ];
-        })->values()
-    ) !!};
+    // KATEGORI TRANSAKSI
+    const incomeCategories = [
+        { value: 'Iuran Kas Siswa', label: 'Iuran Kas Siswa' },
+        { value: 'Denda Piket Siswa', label: 'Denda Piket Siswa' },
+        { value: 'Donasi & Sumbangan', label: 'Donasi & Sumbangan' },
+        { value: 'Kas Awal / Saldo Awal', label: 'Kas Awal / Saldo Awal' },
+        { value: 'Pemasukan Lainnya', label: 'Pemasukan Lainnya' }
+    ];
 
+    const expenseCategories = [
+        { value: 'Alat & Perlengkapan Belajar', label: 'Alat & Perlengkapan Belajar' },
+        { value: 'Fotokopi & Cetak Dokumen', label: 'Fotokopi & Cetak Dokumen' },
+        { value: 'Kebersihan & Sanitasi Kelas', label: 'Kebersihan & Sanitasi Kelas' },
+        { value: 'Konsumsi & Acara Kelas', label: 'Konsumsi & Acara Kelas' },
+        { value: 'Pengeluaran Lainnya', label: 'Pengeluaran Lainnya' },
+        { value: 'Sosial & Santunan Siswa', label: 'Sosial & Santunan Siswa' }
+    ];
 
-    /* =========================================================
-       MODAL TAMBAH
-    ========================================================= */
-
-    const modal =
-        document.getElementById('transactionModal');
-
-    const openModalButton =
-        document.getElementById('openModalButton');
-
-    const closeModalButton =
-        document.getElementById('closeModalButton');
-
-    const cancelButton =
-        document.getElementById('cancelButton');
-
+    // ELEMEN MODAL TAMBAH
+    const modal = document.getElementById('transactionModal');
+    const openModalButton = document.getElementById('openModalButton');
+    const closeModalButton = document.getElementById('closeModalButton');
+    const cancelButton = document.getElementById('cancelButton');
 
     function openModal() {
-
         modal.classList.add('show');
-
         document.body.style.overflow = 'hidden';
-
     }
-
 
     function closeModal() {
-
         modal.classList.remove('show');
-
         document.body.style.overflow = '';
-
     }
 
+    openModalButton.addEventListener('click', openModal);
+    closeModalButton.addEventListener('click', closeModal);
+    cancelButton.addEventListener('click', closeModal);
 
-    openModalButton.addEventListener(
-        'click',
-        openModal
-    );
-
-
-    closeModalButton.addEventListener(
-        'click',
-        closeModal
-    );
-
-
-    cancelButton.addEventListener(
-        'click',
-        closeModal
-    );
-
-
-    modal.addEventListener(
-        'click',
-        function(event) {
-
-            if (event.target === modal) {
-                closeModal();
-            }
-
+    modal.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            closeModal();
         }
-    );
+    });
 
+    // ELEMEN FORM TAMBAH
+    const typeIn = document.getElementById('typeIn');
+    const typeOut = document.getElementById('typeOut');
+    const category = document.getElementById('category');
+    const categorySection = document.getElementById('categorySection');
 
-    /* =========================================================
-       MODAL EDIT
-    ========================================================= */
+    const studentSection = document.getElementById('studentSection');
+    const paymentMonthSection = document.getElementById('paymentMonthSection');
 
-    const editModal =
-        document.getElementById('editModal');
+    const studentSearch = document.getElementById('studentSearch');
+    const studentResults = document.getElementById('studentResults');
+    const studentId = document.getElementById('studentId');
+
+    const selectedStudent = document.getElementById('selectedStudent');
+    const selectedStudentName = document.getElementById('selectedStudentName');
+    const selectedStudentNis = document.getElementById('selectedStudentNis');
+
+    const changeStudent = document.getElementById('changeStudent');
+
+    const descriptionSection = document.getElementById('descriptionSection');
+    const description = document.getElementById('description');
+
+    const oldCategory = @json(old('category'));
+
+    // MEMPERBARUI PILIHAN KATEGORI TAMBAH
+    function updateCategory() {
+        const previousValue = category.value;
+        category.innerHTML = '';
+
+        const placeholder = document.createElement('option');
+        placeholder.value = '';
+        placeholder.textContent = typeOut.checked
+            ? 'Pilih kategori pengeluaran'
+            : 'Pilih kategori pemasukan';
+
+        category.appendChild(placeholder);
+
+        const categories = typeOut.checked
+            ? expenseCategories
+            : incomeCategories;
+
+        categories.forEach(function(item) {
+            const option = document.createElement('option');
+            option.value = item.value;
+            option.textContent = item.label;
+            category.appendChild(option);
+        });
+
+        const desiredValue = oldCategory || previousValue;
+
+        if (desiredValue === 'Kas Siswa') {
+            category.value = 'Iuran Kas Siswa';
+        } else if (desiredValue === 'Lainnya') {
+            category.value = 'Pemasukan Lainnya';
+        } else {
+            category.value = desiredValue;
+        }
+    }
+
+    // MEMPERBARUI FORM TAMBAH
+    function updateForm() {
+        const isIncome = typeIn.checked;
+        const isStudentCash = isIncome &&
+            category.value === 'Iuran Kas Siswa';
+
+        categorySection.style.display = 'block';
+        category.disabled = false;
+        category.required = true;
+
+        if (isStudentCash) {
+            studentSection.classList.add('show');
+            paymentMonthSection.classList.add('show');
+
+            descriptionSection.style.display = 'none';
+            description.disabled = true;
+
+            studentId.required = true;
+            document.getElementById('paymentMonth').required = true;
+        } else {
+            studentSection.classList.remove('show');
+            paymentMonthSection.classList.remove('show');
+
+            descriptionSection.style.display = 'block';
+            description.disabled = false;
+
+            studentId.required = false;
+            document.getElementById('paymentMonth').required = false;
+        }
+    }
+
+    typeIn.addEventListener('change', function() {
+        updateCategory();
+        updateForm();
+        resetStudentSelection();
+    });
+
+    typeOut.addEventListener('change', function() {
+        updateCategory();
+        updateForm();
+        resetStudentSelection();
+    });
+
+    category.addEventListener('change', function() {
+        if (category.value !== 'Iuran Kas Siswa') {
+            resetStudentSelection();
+        }
+
+        updateForm();
+    });
+
+    // PENCARIAN SISWA
+    studentSearch.addEventListener('input', function() {
+        const keyword = this.value.toLowerCase().trim();
+
+        studentResults.innerHTML = '';
+
+        if (!keyword) {
+            studentResults.classList.remove('show');
+            return;
+        }
+
+        const filteredStudents = students.filter(function(student) {
+            const name = String(student.name ?? '').toLowerCase();
+            const nis = String(student.nis ?? '').toLowerCase();
+
+            return name.includes(keyword) || nis.includes(keyword);
+        });
+
+        if (filteredStudents.length === 0) {
+            studentResults.innerHTML =
+                '<div class="no-result">Siswa tidak ditemukan.</div>';
+
+            studentResults.classList.add('show');
+            return;
+        }
+
+        filteredStudents.forEach(function(student) {
+            const item = document.createElement('div');
+            item.className = 'student-result';
+
+            const name = document.createElement('div');
+            name.className = 'student-name';
+            name.textContent = student.name;
+
+            const nis = document.createElement('div');
+            nis.className = 'student-nis';
+            nis.textContent = 'NIS: ' + student.nis;
+
+            item.appendChild(name);
+            item.appendChild(nis);
+
+            item.addEventListener('click', function() {
+                selectStudent(student);
+            });
+
+            studentResults.appendChild(item);
+        });
+
+        studentResults.classList.add('show');
+    });
+
+    function selectStudent(student) {
+        studentId.value = student.id;
+
+        selectedStudentName.textContent = student.name;
+        selectedStudentNis.textContent = 'NIS: ' + student.nis;
+
+        selectedStudent.classList.add('show');
+
+        studentSearch.value = '';
+        studentResults.innerHTML = '';
+        studentResults.classList.remove('show');
+    }
+
+    function resetStudentSelection() {
+        studentId.value = '';
+        selectedStudentName.textContent = '';
+        selectedStudentNis.textContent = '';
+
+        selectedStudent.classList.remove('show');
+
+        studentSearch.value = '';
+        studentResults.innerHTML = '';
+        studentResults.classList.remove('show');
+    }
+
+    changeStudent.addEventListener('click', function() {
+        resetStudentSelection();
+        studentSearch.focus();
+    });
+
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.student-search-wrapper')) {
+            studentResults.classList.remove('show');
+        }
+    });
+
+    // MODAL EDIT
+    const editModal = document.getElementById('editModal');
 
     const closeEditModalButton =
         document.getElementById('closeEditModalButton');
@@ -1963,8 +1853,11 @@
     const editCategory =
         document.getElementById('editCategory');
 
-    const editCategoryHidden =
-        document.getElementById('editCategoryHidden');
+    const editCategorySection =
+        document.getElementById('editCategorySection');
+
+    const editCategoryHelp =
+        document.getElementById('editCategoryHelp');
 
     const editAmount =
         document.getElementById('editAmount');
@@ -1975,612 +1868,126 @@
     const editDescriptionSection =
         document.getElementById('editDescriptionSection');
 
+    function fillEditCategories(type, selectedCategory) {
+        editCategory.innerHTML = '';
 
-    function openEditModal(
-        id,
-        type,
-        categoryValue,
-        amount,
-        descriptionValue
-    ) {
+        const categories = type === 'in'
+            ? incomeCategories
+            : expenseCategories;
 
+        categories.forEach(function(item) {
+            const option = document.createElement('option');
+            option.value = item.value;
+            option.textContent = item.label;
+
+            editCategory.appendChild(option);
+        });
+
+        let normalizedCategory = selectedCategory;
+
+        if (selectedCategory === 'Kas Siswa') {
+            normalizedCategory = 'Iuran Kas Siswa';
+        }
+
+        if (selectedCategory === 'Lainnya') {
+            normalizedCategory = 'Pemasukan Lainnya';
+        }
+
+        editCategory.value = normalizedCategory;
+    }
+
+    function openEditModal(id, type, categoryValue, amount, descriptionValue) {
         editTransactionForm.action =
             "{{ url('/transactions') }}/" + id;
 
-
         editTransactionType.textContent =
-            type === 'in'
-                ? 'Pemasukan'
-                : 'Pengeluaran';
+            type === 'in' ? 'Pemasukan' : 'Pengeluaran';
 
+        editAmount.value = Number(amount);
+        editDescription.value = descriptionValue || '';
 
-        editCategory.value =
-            categoryValue || '';
+        const isStudentCash = categoryValue === 'Kas Siswa';
 
-
-        editCategoryHidden.value =
-            categoryValue || '';
-
-
-        editAmount.value =
-            Number(amount);
-
-
-        editDescription.value =
-            descriptionValue || '';
-
-
-        if (categoryValue === 'Kas Siswa') {
-
-            editCategory.value =
-                'Kas Siswa';
-
-            editCategory.disabled =
-                true;
-
-            editCategoryHidden.disabled =
-                false;
-
-            editDescriptionSection.style.display =
-                'none';
-
-            editDescription.removeAttribute(
-                'name'
-            );
-
-        } else {
-
-            editCategory.disabled =
-                false;
-
-            editCategoryHidden.disabled =
-                true;
-
-            editDescriptionSection.style.display =
-                'block';
-
-            editDescription.setAttribute(
-                'name',
-                'description'
-            );
-
-        }
-
-
-        editModal.classList.add('show');
-
-        document.body.style.overflow = 'hidden';
-
-    }
-
-
-    function closeEditModal() {
-
-        editModal.classList.remove('show');
-
-        document.body.style.overflow = '';
-
-    }
-
-
-    closeEditModalButton.addEventListener(
-        'click',
-        closeEditModal
-    );
-
-
-    cancelEditButton.addEventListener(
-        'click',
-        closeEditModal
-    );
-
-
-    editModal.addEventListener(
-        'click',
-        function(event) {
-
-            if (event.target === editModal) {
-                closeEditModal();
-            }
-
-        }
-    );
-
-
-    /* =========================================================
-       HAPUS
-    ========================================================= */
-
-    function confirmDelete(message) {
-
-        return confirm(
-            message +
-            '\n\nApakah kamu yakin ingin melanjutkan?'
-        );
-
-    }
-
-
-    /* =========================================================
-       FORM
-    ========================================================= */
-
-    const typeIn =
-        document.getElementById('typeIn');
-
-    const typeOut =
-        document.getElementById('typeOut');
-
-    const category =
-        document.getElementById('category');
-
-    const studentSection =
-        document.getElementById('studentSection');
-
-    const paymentMonthSection =
-        document.getElementById('paymentMonthSection');
-
-    const studentSearch =
-        document.getElementById('studentSearch');
-
-    const studentResults =
-        document.getElementById('studentResults');
-
-    const studentId =
-        document.getElementById('studentId');
-
-    const selectedStudent =
-        document.getElementById('selectedStudent');
-
-    const selectedStudentName =
-        document.getElementById('selectedStudentName');
-
-    const selectedStudentNis =
-        document.getElementById('selectedStudentNis');
-
-    const changeStudent =
-        document.getElementById('changeStudent');
-
-    const descriptionSection =
-        document.getElementById('descriptionSection');
-
-    const description =
-        document.getElementById('description');
-
-    const oldCategory =
-        @json(old('category'));
-
-
-    /* =========================================================
-       UPDATE CATEGORY
-    ========================================================= */
-
-    function updateCategory() {
-
-        if (typeOut.checked) {
-
-            category.innerHTML = `
-
-                <option value="">
-                    Pilih kategori pengeluaran
-                </option>
-
-                <option value="Operasional">
-                    Operasional
-                </option>
-
-                <option value="Kebutuhan Kelas">
-                    Kebutuhan Kelas
-                </option>
-
-                <option value="Lainnya">
-                    Lainnya
-                </option>
-
-            `;
-
-        } else {
-
-            category.innerHTML = `
-
-                <option value="">
-                    Pilih kategori pemasukan
-                </option>
-
-                <option value="Kas Siswa">
-                    Kas Siswa
-                </option>
-
-                <option value="Iuran">
-                    Iuran
-                </option>
-
-                <option value="Lainnya">
-                    Lainnya
-                </option>
-
-            `;
-
-        }
-
-
-        if (oldCategory) {
-            category.value = oldCategory;
-        }
-
-    }
-
-
-    /* =========================================================
-       UPDATE FORM
-    ========================================================= */
-
-    function updateForm() {
-
-        const isIncome =
-            typeIn.checked;
-
-        const isStudentCash =
-            isIncome &&
-            category.value === 'Kas Siswa';
-
+        fillEditCategories(type, categoryValue);
 
         if (isStudentCash) {
+            editCategorySection.style.display = 'block';
+            editCategory.value = 'Iuran Kas Siswa';
+            editCategory.disabled = true;
+            editCategory.required = false;
 
-            studentSection.classList.add('show');
+            editCategoryHelp.textContent =
+                'Kategori pembayaran kas siswa tidak dapat diubah karena terhubung dengan data pembayaran bulanan.';
 
-            paymentMonthSection.classList.add('show');
-
-            descriptionSection.style.display =
-                'none';
-
-            description.removeAttribute('required');
-
+            editDescriptionSection.style.display = 'none';
+            editDescription.disabled = true;
         } else {
+            editCategorySection.style.display = 'block';
+            editCategory.disabled = false;
+            editCategory.required = true;
+            editCategoryHelp.textContent = '';
 
-            studentSection.classList.remove('show');
-
-            paymentMonthSection.classList.remove('show');
-
-            descriptionSection.style.display =
-                'block';
-
+            editDescriptionSection.style.display = 'block';
+            editDescription.disabled = false;
         }
 
+        editModal.classList.add('show');
+        document.body.style.overflow = 'hidden';
     }
 
-
-    /* =========================================================
-       SEARCH SISWA
-    ========================================================= */
-
-    studentSearch.addEventListener(
-        'input',
-        function() {
-
-            const keyword =
-                this.value.toLowerCase().trim();
-
-            studentResults.innerHTML = '';
-
-
-            if (!keyword) {
-
-                studentResults.classList.remove('show');
-
-                return;
-
-            }
-
-
-            const filteredStudents =
-                students.filter(function(student) {
-
-                    const name =
-                        String(
-                            student.name ?? ''
-                        ).toLowerCase();
-
-                    const nis =
-                        String(
-                            student.nis ?? ''
-                        ).toLowerCase();
-
-
-                    return (
-                        name.includes(keyword) ||
-                        nis.includes(keyword)
-                    );
-
-                });
-
-
-            if (filteredStudents.length === 0) {
-
-                studentResults.innerHTML = `
-                    <div class="no-result">
-                        Siswa tidak ditemukan.
-                    </div>
-                `;
-
-                studentResults.classList.add('show');
-
-                return;
-
-            }
-
-
-            filteredStudents.forEach(
-                function(student) {
-
-                    const item =
-                        document.createElement('div');
-
-                    item.className =
-                        'student-result';
-
-                    item.innerHTML = `
-
-                        <div class="student-name">
-                            ${escapeHtml(student.name)}
-                        </div>
-
-                        <div class="student-nis">
-                            NIS: ${escapeHtml(student.nis)}
-                        </div>
-
-                    `;
-
-
-                    item.addEventListener(
-                        'click',
-                        function() {
-
-                            selectStudent(student);
-
-                        }
-                    );
-
-
-                    studentResults.appendChild(item);
-
-                }
-            );
-
-
-            studentResults.classList.add('show');
-
-        }
-    );
-
-
-    /* =========================================================
-       SELECT SISWA
-    ========================================================= */
-
-    function selectStudent(student) {
-
-        studentId.value =
-            student.id;
-
-        selectedStudentName.textContent =
-            student.name;
-
-        selectedStudentNis.textContent =
-            'NIS: ' + student.nis;
-
-        selectedStudent.classList.add('show');
-
-        studentSearch.value = '';
-
-        studentResults.innerHTML = '';
-
-        studentResults.classList.remove('show');
-
+    function closeEditModal() {
+        editModal.classList.remove('show');
+        document.body.style.overflow = '';
     }
 
+    closeEditModalButton.addEventListener('click', closeEditModal);
+    cancelEditButton.addEventListener('click', closeEditModal);
 
-    /* =========================================================
-       GANTI SISWA
-    ========================================================= */
-
-    changeStudent.addEventListener(
-        'click',
-        function() {
-
-            studentId.value = '';
-
-            selectedStudentName.textContent = '';
-
-            selectedStudentNis.textContent = '';
-
-            selectedStudent.classList.remove('show');
-
-            studentSearch.value = '';
-
-            studentResults.innerHTML = '';
-
-            studentResults.classList.remove('show');
-
-            studentSearch.focus();
-
+    editModal.addEventListener('click', function(event) {
+        if (event.target === editModal) {
+            closeEditModal();
         }
-    );
+    });
 
-
-    /* =========================================================
-       TYPE CHANGE
-    ========================================================= */
-
-    typeIn.addEventListener(
-        'change',
-        function() {
-
-            updateCategory();
-
-            updateForm();
-
-        }
-    );
-
-
-    typeOut.addEventListener(
-        'change',
-        function() {
-
-            updateCategory();
-
-            updateForm();
-
-        }
-    );
-
-
-    /* =========================================================
-       CATEGORY CHANGE
-    ========================================================= */
-
-    category.addEventListener(
-        'change',
-        function() {
-
-            if (
-                !(
-                    typeIn.checked &&
-                    category.value === 'Kas Siswa'
-                )
-            ) {
-
-                studentId.value = '';
-
-                selectedStudent.classList.remove('show');
-
-                studentSearch.value = '';
-
-                studentResults.innerHTML = '';
-
-                studentResults.classList.remove('show');
-
-            }
-
-            updateForm();
-
-        }
-    );
-
-
-    /* =========================================================
-       CLOSE SEARCH
-    ========================================================= */
-
-    document.addEventListener(
-        'click',
-        function(event) {
-
-            if (
-                !event.target.closest(
-                    '.student-search-wrapper'
-                )
-            ) {
-
-                studentResults.classList.remove('show');
-
-            }
-
-        }
-    );
-
-
-    /* =========================================================
-       ESCAPE HTML
-    ========================================================= */
-
-    function escapeHtml(value) {
-
-        return String(value)
-
-            .replace(/&/g, '&amp;')
-
-            .replace(/</g, '&lt;')
-
-            .replace(/>/g, '&gt;')
-
-            .replace(/"/g, '&quot;')
-
-            .replace(/'/g, '&#039;');
-
+    // KONFIRMASI HAPUS
+    function confirmDelete(message) {
+        return confirm(
+            message + '\n\nApakah kamu yakin ingin melanjutkan?'
+        );
     }
 
-
-    /* =========================================================
-       ESCAPE KEY
-    ========================================================= */
-
-    document.addEventListener(
-        'keydown',
-        function(event) {
-
-            if (event.key === 'Escape') {
-
-                if (modal.classList.contains('show')) {
-                    closeModal();
-                }
-
-                if (editModal.classList.contains('show')) {
-                    closeEditModal();
-                }
-
+    // TUTUP MODAL DENGAN ESCAPE
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            if (modal.classList.contains('show')) {
+                closeModal();
             }
 
+            if (editModal.classList.contains('show')) {
+                closeEditModal();
+            }
         }
-    );
+    });
 
-
-    /* =========================================================
-       INITIAL
-    ========================================================= */
-
+    // INISIALISASI FORM
     updateCategory();
-
     updateForm();
 
-
-    /* =========================================================
-       RESTORE OLD STUDENT
-    ========================================================= */
-
-    const oldStudentId =
-        @json(old('student_id'));
-
+    const oldStudentId = @json(old('student_id'));
 
     if (oldStudentId) {
-
-        const oldStudent =
-            students.find(function(student) {
-
-                return String(student.id) ===
-                    String(oldStudentId);
-
-            });
-
+        const oldStudent = students.find(function(student) {
+            return String(student.id) === String(oldStudentId);
+        });
 
         if (oldStudent) {
-
             selectStudent(oldStudent);
-
         }
-
     }
 
-
-    /* =========================================================
-       VALIDATION ERROR
-    ========================================================= */
-
+    // BUKA MODAL KEMBALI JIKA VALIDASI GAGAL
     @if($errors->any())
-
         openModal();
-
     @endif
 </script>
 

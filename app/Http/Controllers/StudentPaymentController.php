@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Student;
 use App\Models\StudentPayment;
 use App\Models\Transaction;
+use App\Models\Notification;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,50 +14,71 @@ class StudentPaymentController extends Controller
 {
     private const MONTHLY_FEE = 10000;
 
+    // KATEGORI PEMASUKAN
+    private const INCOME_CATEGORIES = [
+        'Denda Piket Siswa',
+        'Donasi & Sumbangan',
+        'Iuran Kas Siswa',
+        'Kas Awal / Saldo Awal',
+        'Pemasukan Lainnya',
+    ];
+
+    // KATEGORI PENGELUARAN
+    private const EXPENSE_CATEGORIES = [
+        'Alat & Perlengkapan Belajar',
+        'Fotokopi & Cetak Dokumen',
+        'Kebersihan & Sanitasi Kelas',
+        'Konsumsi & Acara Kelas',
+        'Pengeluaran Lainnya',
+        'Sosial & Santunan Siswa',
+    ];
+
+    // Samakan kategori tampilan dengan kategori lama di database.
+    private function normalizeCategory(?string $category): string
+    {
+        if ($category === null || $category === '') {
+            return '';
+        }
+
+        return match ($category) {
+            'Iuran Kas Siswa' => 'Kas Siswa',
+            'Pemasukan Lainnya' => 'Lainnya',
+            default => $category,
+        };
+    }
+
     // ================================================================
     // INDEX
     // ================================================================
 
     public function index(Request $request)
     {
-        $selectedYear = (int) $request->get(
-            'year',
-            now()->year
-        );
+        $selectedYear = (int) $request->input('year', now()->year);
 
-        if (
-            $selectedYear < 2020 ||
-            $selectedYear > 2100
-        ) {
+        if ($selectedYear < 2020 || $selectedYear > 2100) {
             $selectedYear = now()->year;
         }
 
-        // ------------------------------------------------------------
-        // DATA SISWA
-        // ------------------------------------------------------------
+        $search = trim((string) ($request->input('search') ?? ''));
+        $type = (string) ($request->input('type') ?? '');
+        $category = (string) ($request->input('category') ?? '');
+        $fromDate = (string) ($request->input('from_date') ?? '');
+        $toDate = (string) ($request->input('to_date') ?? '');
 
+        // DATA SISWA
         $students = Student::orderBy('name')->get();
 
-        // ------------------------------------------------------------
         // DATA PEMBAYARAN SISWA
-        // ------------------------------------------------------------
-
         $payments = StudentPayment::whereIn(
             'student_id',
             $students->pluck('id')
         )
-            ->whereYear(
-                'payment_month',
-                $selectedYear
-            )
+            ->whereYear('payment_month', $selectedYear)
             ->get()
             ->groupBy('student_id');
 
         $studentPayments = $students->map(
-            function ($student) use (
-                $payments,
-                $selectedYear
-            ) {
+            function ($student) use ($payments, $selectedYear) {
                 $paymentData = $payments->get(
                     $student->id,
                     collect()
@@ -65,50 +87,78 @@ class StudentPaymentController extends Controller
                 $monthlyPayments = [];
 
                 for ($i = 1; $i <= 12; $i++) {
-                    $month = Carbon::create(
-                        $selectedYear,
-                        $i,
-                        1
-                    );
+                    $month = Carbon::create($selectedYear, $i, 1);
 
-                    $payment = $paymentData->first(
-                        function ($item) use ($month) {
-                            return Carbon::parse(
-                                $item->payment_month
-                            )->format('Y-m') ===
-                            $month->format('Y-m');
-                        }
-                    );
+                    $amount = $paymentData
+                        ->filter(function ($item) use ($month) {
+                            return Carbon::parse($item->payment_month)
+                                ->format('Y-m') === $month->format('Y-m');
+                        })
+                        ->sum('amount');
 
-                    $amount = $payment
-                        ? (float) $payment->amount
-                        : 0;
+                    $amount = (float) $amount;
 
                     $monthlyPayments[] = [
                         'month' => $month->format('Y-m-d'),
                         'label' => $month->translatedFormat('M'),
                         'amount' => $amount,
                         'paid' => $amount >= self::MONTHLY_FEE,
-                        'payment_id' => $payment?->id,
+                        'payment_id' => null,
                     ];
                 }
 
                 return [
                     'student' => $student,
                     'months' => $monthlyPayments,
-                    'total' => collect(
-                        $monthlyPayments
-                    )->sum('amount'),
+                    'total' => collect($monthlyPayments)->sum('amount'),
                 ];
             }
         );
 
-        // ------------------------------------------------------------
-        // TRANSAKSI
-        // ------------------------------------------------------------
+        // QUERY TRANSAKSI
+        $transactionQuery = Transaction::query();
 
-        $transactions = Transaction::latest()->get();
+        // FILTER JENIS TRANSAKSI
+        if (in_array($type, ['in', 'out'], true)) {
+            $transactionQuery->where('type', $type);
+        }
 
+        // FILTER KATEGORI
+        if ($category !== '') {
+            $storedCategory = $this->normalizeCategory($category);
+
+            $transactionQuery->where(
+                'category',
+                $storedCategory
+            );
+        }
+
+        // FILTER TANGGAL MULAI
+        if ($fromDate !== '') {
+            $transactionQuery->whereDate('created_at', '>=', $fromDate);
+        }
+
+        // FILTER TANGGAL AKHIR
+        if ($toDate !== '') {
+            $transactionQuery->whereDate('created_at', '<=', $toDate);
+        }
+
+        // PENCARIAN KATEGORI DAN KETERANGAN
+        if ($search !== '') {
+            $transactionQuery->where(function ($query) use ($search) {
+                $query->where('category', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        // PAGINATION
+        $transactions = $transactionQuery
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
+
+        // TOTAL KESELURUHAN TRANSAKSI
+        // Tidak terpengaruh filter, pencarian, atau pagination.
         $totalPemasukan = Transaction::where(
             'type',
             'in'
@@ -119,44 +169,58 @@ class StudentPaymentController extends Controller
             'out'
         )->sum('amount');
 
-        $totalSaldo =
-            $totalPemasukan -
-            $totalPengeluaran;
+        $totalSaldo = $totalPemasukan - $totalPengeluaran;
 
-        return view(
-            'transactions.index',
-            [
-                'students' => $students,
-                'studentPayments' => $studentPayments,
-                'transactions' => $transactions,
-                'selectedYear' => $selectedYear,
-                'monthlyFee' => self::MONTHLY_FEE,
-                'totalPemasukan' => $totalPemasukan,
-                'totalPengeluaran' => $totalPengeluaran,
-                'totalSaldo' => $totalSaldo,
-            ]
-        );
+        return view('transactions.index', [
+            'students' => $students,
+            'studentPayments' => $studentPayments,
+            'transactions' => $transactions,
+            'selectedYear' => $selectedYear,
+            'monthlyFee' => self::MONTHLY_FEE,
+            'totalPemasukan' => $totalPemasukan,
+            'totalPengeluaran' => $totalPengeluaran,
+            'totalSaldo' => $totalSaldo,
+            'search' => $search,
+            'type' => $type,
+            'category' => $category,
+            'fromDate' => $fromDate,
+            'toDate' => $toDate,
+            'incomeCategories' => self::INCOME_CATEGORIES,
+            'expenseCategories' => self::EXPENSE_CATEGORIES,
+        ]);
     }
 
     // ================================================================
-    // STORE
+    // STORE TRANSAKSI
     // ================================================================
 
     public function store(Request $request)
     {
         $request->validate([
             'type' => 'required|in:in,out',
-            'category' => 'required|string|max:255',
             'amount' => 'required|numeric|min:1',
+            'description' => 'nullable|string',
         ]);
 
-        // ------------------------------------------------------------
-        // KAS SISWA
-        // ------------------------------------------------------------
+        // VALIDASI KATEGORI SESUAI JENIS TRANSAKSI
+        if ($request->type === 'in') {
+            $request->validate([
+                'category' => 'required|in:' .
+                    implode(',', self::INCOME_CATEGORIES),
+            ]);
+        } else {
+            $request->validate([
+                'category' => 'required|in:' .
+                    implode(',', self::EXPENSE_CATEGORIES),
+            ]);
+        }
 
+        $category = $this->normalizeCategory($request->category);
+
+        // PEMBAYARAN KAS SISWA
         if (
             $request->type === 'in' &&
-            $request->category === 'Kas Siswa'
+            $category === 'Kas Siswa'
         ) {
             $request->validate([
                 'student_id' => 'required|exists:students,id',
@@ -166,36 +230,25 @@ class StudentPaymentController extends Controller
             return $this->storeStudentPayment($request);
         }
 
-        // ------------------------------------------------------------
         // TRANSAKSI BIASA
-        // ------------------------------------------------------------
-
-        $request->validate([
-            'description' => 'nullable|string',
-        ]);
-
         Transaction::create([
             'type' => $request->type,
             'amount' => $request->amount,
-            'category' => $request->category,
+            'category' => $category,
             'description' => $request->description,
         ]);
 
         return redirect()
             ->route('transactions.index')
-            ->with(
-                'success',
-                'Transaksi berhasil dicatat.'
-            );
+            ->with('success', 'Transaksi berhasil dicatat.');
     }
 
     // ================================================================
     // STORE PEMBAYARAN SISWA
     // ================================================================
 
-    private function storeStudentPayment(
-        Request $request
-    ) {
+    private function storeStudentPayment(Request $request)
+    {
         $transactionMonth = Carbon::createFromFormat(
             'Y-m',
             $request->payment_month
@@ -203,22 +256,21 @@ class StudentPaymentController extends Controller
 
         $transactionYear = $transactionMonth->year;
 
+        $student = Student::with('user')->findOrFail(
+            (int) $request->student_id
+        );
+
+        $transaction = null;
+
         DB::transaction(
             function () use (
                 $request,
-                $transactionMonth
+                $transactionMonth,
+                $student,
+                &$transaction
             ) {
                 $studentId = (int) $request->student_id;
-
                 $remaining = (float) $request->amount;
-
-                $student = Student::findOrFail(
-                    $studentId
-                );
-
-                // ----------------------------------------------------
-                // BUAT TRANSAKSI HISTORY
-                // ----------------------------------------------------
 
                 $transaction = Transaction::create([
                     'type' => 'in',
@@ -238,14 +290,10 @@ class StudentPaymentController extends Controller
                         ),
                 ]);
 
-                // ----------------------------------------------------
                 // ALOKASI KE BULAN PEMBAYARAN
-                // ----------------------------------------------------
-
-                $allocationMonth =
-                    $transactionMonth
-                        ->copy()
-                        ->startOfYear();
+                $allocationMonth = $transactionMonth
+                    ->copy()
+                    ->startOfYear();
 
                 while ($remaining > 0) {
                     $payment = StudentPayment::where(
@@ -258,85 +306,69 @@ class StudentPaymentController extends Controller
                         )
                         ->first();
 
-                    // ------------------------------------------------
-                    // BELUM ADA DATA BULAN
-                    // ------------------------------------------------
-
                     if (!$payment) {
                         $payment = new StudentPayment();
 
-                        $payment->student_id =
-                            $studentId;
-
-                        $payment->transaction_id =
-                            $transaction->id;
-
+                        $payment->student_id = $studentId;
+                        $payment->transaction_id = $transaction->id;
                         $payment->payment_month =
                             $allocationMonth->format('Y-m-d');
-
                         $payment->amount = 0;
                     } else {
-                        // --------------------------------------------
-                        // DATA SUDAH ADA
-                        // --------------------------------------------
-
                         if (!$payment->transaction_id) {
-                            $payment->transaction_id =
-                                $transaction->id;
+                            $payment->transaction_id = $transaction->id;
                         }
                     }
 
-                    $currentAmount =
-                        (float) $payment->amount;
+                    $currentAmount = (float) $payment->amount;
 
-                    // ------------------------------------------------
-                    // BULAN SUDAH LUNAS
-                    // ------------------------------------------------
-
-                    if (
-                        $currentAmount >=
-                        self::MONTHLY_FEE
-                    ) {
+                    if ($currentAmount >= self::MONTHLY_FEE) {
                         $allocationMonth->addMonth();
-
                         continue;
                     }
 
-                    // ------------------------------------------------
-                    // HITUNG SISA BULAN
-                    // ------------------------------------------------
-
                     $remainingForMonth =
-                        self::MONTHLY_FEE -
-                        $currentAmount;
+                        self::MONTHLY_FEE - $currentAmount;
 
                     $allocation = min(
                         $remaining,
                         $remainingForMonth
                     );
 
-                    $payment->amount =
-                        $currentAmount +
-                        $allocation;
-
+                    $payment->amount = $currentAmount + $allocation;
                     $payment->paid_at = now();
-
                     $payment->save();
 
                     $remaining -= $allocation;
-
                     $allocationMonth->addMonth();
                 }
             }
         );
 
+        // NOTIFIKASI SISWA
+        if ($student->user_id && $transaction) {
+            Notification::create([
+                'user_id' => $student->user_id,
+                'type' => 'pembayaran_berhasil',
+                'title' => 'Pembayaran Berhasil Dicatat',
+                'message' =>
+                    'Pembayaran kas sebesar Rp ' .
+                    number_format(
+                        (float) $request->amount,
+                        0,
+                        ',',
+                        '.'
+                    ) .
+                    ' untuk ' .
+                    $transactionMonth->translatedFormat('F Y') .
+                    ' telah berhasil dicatat oleh bendahara.',
+            ]);
+        }
+
         return redirect()
-            ->route(
-                'transactions.index',
-                [
-                    'year' => $transactionYear,
-                ]
-            )
+            ->route('transactions.index', [
+                'year' => $transactionYear,
+            ])
             ->with(
                 'success',
                 'Pembayaran kas siswa berhasil dicatat.'
@@ -347,31 +379,38 @@ class StudentPaymentController extends Controller
     // UPDATE TRANSAKSI
     // ================================================================
 
-    public function updateTransaction(
-        Request $request,
-        $id
-    ) {
+    public function updateTransaction(Request $request, $id)
+    {
+        $transaction = Transaction::findOrFail($id);
+
         $request->validate([
-            'category' => 'required|string|max:255',
             'amount' => 'required|numeric|min:1',
             'description' => 'nullable|string',
         ]);
 
-        $transaction = Transaction::findOrFail($id);
-
-        // ============================================================
         // TRANSAKSI BIASA
-        // ============================================================
+        if ($transaction->category !== 'Kas Siswa') {
 
-        if (
-            $transaction->category !==
-            'Kas Siswa'
-        ) {
+            if ($transaction->type === 'in') {
+                $request->validate([
+                    'category' => 'required|in:' .
+                        implode(',', self::INCOME_CATEGORIES),
+                ]);
+            } else {
+                $request->validate([
+                    'category' => 'required|in:' .
+                        implode(',', self::EXPENSE_CATEGORIES),
+                ]);
+            }
+
+            $category = $this->normalizeCategory(
+                $request->category
+            );
+
             $transaction->update([
-                'category' => $request->category,
+                'category' => $category,
                 'amount' => $request->amount,
-                'description' =>
-                    $request->description,
+                'description' => $request->description,
             ]);
 
             return redirect()
@@ -382,23 +421,22 @@ class StudentPaymentController extends Controller
                 );
         }
 
-        // ============================================================
         // TRANSAKSI KAS SISWA
-        // ============================================================
+        $linkedPayments = StudentPayment::where(
+            'transaction_id',
+            $transaction->id
+        )
+            ->orderBy('payment_month')
+            ->get();
 
-        $linkedPayments =
-            StudentPayment::where(
-                'transaction_id',
-                $transaction->id
-            )
-                ->orderBy('payment_month')
-                ->get();
+        $oldAmount = (float) $transaction->amount;
+        $newAmount = (float) $request->amount;
 
-        $oldAmount =
-            (float) $transaction->amount;
+        $studentId = $linkedPayments->first()?->student_id;
 
-        $newAmount =
-            (float) $request->amount;
+        $student = $studentId
+            ? Student::with('user')->find($studentId)
+            : null;
 
         DB::transaction(
             function () use (
@@ -407,13 +445,8 @@ class StudentPaymentController extends Controller
                 $oldAmount,
                 $newAmount
             ) {
-                // ----------------------------------------------------
                 // NOMINAL SAMA
-                // ----------------------------------------------------
-
                 if ($oldAmount === $newAmount) {
-
-                    // Tetap sinkronkan angka di keterangan.
                     $transaction->description =
                         $this->updateAmountInDescription(
                             $transaction->description,
@@ -425,44 +458,31 @@ class StudentPaymentController extends Controller
                     return;
                 }
 
-                // ----------------------------------------------------
                 // NOMINAL DIKURANGI
-                // ----------------------------------------------------
-
                 if ($newAmount < $oldAmount) {
-                    $difference =
-                        $oldAmount -
-                        $newAmount;
+                    $difference = $oldAmount - $newAmount;
 
                     foreach (
-                        $linkedPayments
-                            ->sortByDesc('payment_month')
+                        $linkedPayments->sortByDesc('payment_month')
                         as $payment
                     ) {
                         if ($difference <= 0) {
                             break;
                         }
 
-                        $currentAmount =
-                            (float) $payment->amount;
+                        $currentAmount = (float) $payment->amount;
 
                         $deduct = min(
                             $difference,
                             $currentAmount
                         );
 
-                        $payment->amount =
-                            $currentAmount -
-                            $deduct;
+                        $payment->amount = $currentAmount - $deduct;
 
-                        if (
-                            $payment->amount <= 0
-                        ) {
+                        if ($payment->amount <= 0) {
                             $payment->delete();
                         } else {
-                            $payment->paid_at =
-                                now();
-
+                            $payment->paid_at = now();
                             $payment->save();
                         }
 
@@ -470,92 +490,64 @@ class StudentPaymentController extends Controller
                     }
                 }
 
-                // ----------------------------------------------------
                 // NOMINAL DITAMBAH
-                // ----------------------------------------------------
-
                 if ($newAmount > $oldAmount) {
-                    $difference =
-                        $newAmount -
-                        $oldAmount;
+                    $difference = $newAmount - $oldAmount;
 
-                    $lastPaymentMonth =
-                        $linkedPayments->max(
-                            'payment_month'
-                        );
+                    $lastPaymentMonth = $linkedPayments->max(
+                        'payment_month'
+                    );
 
                     if ($lastPaymentMonth) {
-                        $allocationMonth =
-                            Carbon::parse(
-                                $lastPaymentMonth
-                            )
-                                ->startOfMonth()
-                                ->addMonth();
+                        $allocationMonth = Carbon::parse(
+                            $lastPaymentMonth
+                        )
+                            ->startOfMonth()
+                            ->addMonth();
                     } else {
-                        $allocationMonth =
-                            now()
-                                ->startOfYear();
+                        $allocationMonth = now()->startOfYear();
                     }
 
-                    $studentId =
-                        $linkedPayments
-                            ->first()?->student_id;
+                    $studentId = $linkedPayments->first()?->student_id;
 
                     if (!$studentId) {
-                        return;
+                        throw new \RuntimeException(
+                            'Data siswa untuk pembayaran ini tidak ditemukan.'
+                        );
                     }
 
                     while ($difference > 0) {
-                        $payment =
-                            StudentPayment::where(
-                                'student_id',
-                                $studentId
+                        $payment = StudentPayment::where(
+                            'student_id',
+                            $studentId
+                        )
+                            ->whereDate(
+                                'payment_month',
+                                $allocationMonth->format('Y-m-d')
                             )
-                                ->whereDate(
-                                    'payment_month',
-                                    $allocationMonth
-                                        ->format('Y-m-d')
-                                )
-                                ->first();
+                            ->first();
 
                         if (!$payment) {
-                            $payment =
-                                new StudentPayment();
+                            $payment = new StudentPayment();
 
-                            $payment->student_id =
-                                $studentId;
-
-                            $payment->transaction_id =
-                                $transaction->id;
-
+                            $payment->student_id = $studentId;
+                            $payment->transaction_id = $transaction->id;
                             $payment->payment_month =
-                                $allocationMonth
-                                    ->format('Y-m-d');
-
+                                $allocationMonth->format('Y-m-d');
                             $payment->amount = 0;
-                        } elseif (
-                            !$payment->transaction_id
-                        ) {
-                            $payment->transaction_id =
-                                $transaction->id;
+                        } elseif (!$payment->transaction_id) {
+                            $payment->transaction_id = $transaction->id;
                         }
 
-                        $currentAmount =
-                            (float) $payment->amount;
+                        $currentAmount = (float) $payment->amount;
 
-                        $remainingForMonth =
-                            max(
-                                0,
-                                self::MONTHLY_FEE -
-                                $currentAmount
-                            );
+                        $remainingForMonth = max(
+                            0,
+                            self::MONTHLY_FEE - $currentAmount
+                        );
 
-                        if (
-                            $remainingForMonth <= 0
-                        ) {
-                            $allocationMonth
-                                ->addMonth();
-
+                        if ($remainingForMonth <= 0) {
+                            $allocationMonth->addMonth();
                             continue;
                         }
 
@@ -565,31 +557,18 @@ class StudentPaymentController extends Controller
                         );
 
                         $payment->amount =
-                            $currentAmount +
-                            $allocation;
+                            $currentAmount + $allocation;
 
                         $payment->paid_at = now();
-
                         $payment->save();
 
-                        $difference -=
-                            $allocation;
-
-                        $allocationMonth
-                            ->addMonth();
+                        $difference -= $allocation;
+                        $allocationMonth->addMonth();
                     }
                 }
 
-                // ----------------------------------------------------
                 // UPDATE HISTORY TRANSAKSI
-                // ----------------------------------------------------
-
-                $transaction->amount =
-                    $newAmount;
-
-                // ----------------------------------------------------
-                // UPDATE NOMINAL DI KETERANGAN
-                // ----------------------------------------------------
+                $transaction->amount = $newAmount;
 
                 $transaction->description =
                     $this->updateAmountInDescription(
@@ -600,6 +579,26 @@ class StudentPaymentController extends Controller
                 $transaction->save();
             }
         );
+
+        // NOTIFIKASI PEMBAYARAN DIPERBARUI
+        if (
+            $student &&
+            $student->user_id &&
+            $oldAmount !== $newAmount
+        ) {
+            Notification::create([
+                'user_id' => $student->user_id,
+                'type' => 'pembayaran_diperbarui',
+                'title' => 'Pembayaran Diperbarui',
+                'message' =>
+                    'Catatan pembayaran kas kamu telah diperbarui oleh bendahara. ' .
+                    'Nominal sebelumnya Rp ' .
+                    number_format($oldAmount, 0, ',', '.') .
+                    ' menjadi Rp ' .
+                    number_format($newAmount, 0, ',', '.') .
+                    '.',
+            ]);
+        }
 
         return redirect()
             ->route('transactions.index')
@@ -617,37 +616,18 @@ class StudentPaymentController extends Controller
         ?string $description,
         float $amount
     ): string {
-        $formattedAmount =
-            'Rp ' .
-            number_format(
-                $amount,
-                0,
-                ',',
-                '.'
-            );
-
-        // ------------------------------------------------------------
-        // Kalau description kosong
-        // ------------------------------------------------------------
+        $formattedAmount = 'Rp ' .
+            number_format($amount, 0, ',', '.');
 
         if (!$description) {
             return $formattedAmount;
         }
-
-        // ------------------------------------------------------------
-        // Ganti nominal Rp ... yang berada di bagian akhir
-        // ------------------------------------------------------------
 
         $updatedDescription = preg_replace(
             '/Rp\s*[0-9\.\,]+$/i',
             $formattedAmount,
             $description
         );
-
-        // ------------------------------------------------------------
-        // Kalau tidak menemukan nominal di akhir,
-        // tambahkan nominal baru
-        // ------------------------------------------------------------
 
         if (
             $updatedDescription === null ||
@@ -667,33 +647,47 @@ class StudentPaymentController extends Controller
 
     public function destroyTransaction($id)
     {
-        $transaction =
-            Transaction::findOrFail($id);
+        $transaction = Transaction::findOrFail($id);
+
+        $linkedPayment = StudentPayment::where(
+            'transaction_id',
+            $transaction->id
+        )
+            ->with('student.user')
+            ->first();
+
+        $student = $linkedPayment?->student;
 
         DB::transaction(
             function () use ($transaction) {
-
-                // ----------------------------------------------------
-                // KAS SISWA
-                // ----------------------------------------------------
-
-                if (
-                    $transaction->category ===
-                    'Kas Siswa'
-                ) {
+                if ($transaction->category === 'Kas Siswa') {
                     StudentPayment::where(
                         'transaction_id',
                         $transaction->id
                     )->delete();
                 }
 
-                // ----------------------------------------------------
-                // HAPUS HISTORY TRANSAKSI
-                // ----------------------------------------------------
-
                 $transaction->delete();
             }
         );
+
+        // NOTIFIKASI PEMBAYARAN DIHAPUS
+        if ($student && $student->user_id) {
+            Notification::create([
+                'user_id' => $student->user_id,
+                'type' => 'pembayaran_dihapus',
+                'title' => 'Catatan Pembayaran Dihapus',
+                'message' =>
+                    'Catatan pembayaran kas sebesar Rp ' .
+                    number_format(
+                        (float) $transaction->amount,
+                        0,
+                        ',',
+                        '.'
+                    ) .
+                    ' telah dihapus oleh bendahara.',
+            ]);
+        }
 
         return redirect()
             ->route('transactions.index')
@@ -707,37 +701,46 @@ class StudentPaymentController extends Controller
     // UPDATE PAYMENT BULANAN
     // ================================================================
 
-    public function update(
-        Request $request,
-        $id
-    ) {
+    public function update(Request $request, $id)
+    {
         $request->validate([
             'amount' =>
                 'required|numeric|min:0|max:' .
                 self::MONTHLY_FEE,
         ]);
 
-        $payment =
-            StudentPayment::findOrFail($id);
+        $payment = StudentPayment::with('student.user')
+            ->findOrFail($id);
 
-        $year =
-            Carbon::parse(
-                $payment->payment_month
-            )->year;
+        $year = Carbon::parse(
+            $payment->payment_month
+        )->year;
 
-        $amount =
-            (float) $request->amount;
+        $amount = (float) $request->amount;
+        $student = $payment->student;
+        $oldAmount = (float) $payment->amount;
 
         if ($amount <= 0) {
             $payment->delete();
 
+            if ($student && $student->user_id) {
+                Notification::create([
+                    'user_id' => $student->user_id,
+                    'type' => 'pembayaran_dihapus',
+                    'title' => 'Pembayaran Dihapus',
+                    'message' =>
+                        'Catatan pembayaran kas bulan ' .
+                        Carbon::parse(
+                            $payment->payment_month
+                        )->translatedFormat('F Y') .
+                        ' telah dihapus.',
+                ]);
+            }
+
             return redirect()
-                ->route(
-                    'transactions.index',
-                    [
-                        'year' => $year,
-                    ]
-                )
+                ->route('transactions.index', [
+                    'year' => $year,
+                ])
                 ->with(
                     'success',
                     'Pembayaran bulan tersebut berhasil dikosongkan.'
@@ -745,18 +748,35 @@ class StudentPaymentController extends Controller
         }
 
         $payment->amount = $amount;
-
         $payment->paid_at = now();
-
         $payment->save();
 
+        if (
+            $student &&
+            $student->user_id &&
+            $oldAmount !== $amount
+        ) {
+            Notification::create([
+                'user_id' => $student->user_id,
+                'type' => 'pembayaran_diperbarui',
+                'title' => 'Pembayaran Diperbarui',
+                'message' =>
+                    'Pembayaran kas bulan ' .
+                    Carbon::parse(
+                        $payment->payment_month
+                    )->translatedFormat('F Y') .
+                    ' telah diperbarui dari Rp ' .
+                    number_format($oldAmount, 0, ',', '.') .
+                    ' menjadi Rp ' .
+                    number_format($amount, 0, ',', '.') .
+                    '.',
+            ]);
+        }
+
         return redirect()
-            ->route(
-                'transactions.index',
-                [
-                    'year' => $year,
-                ]
-            )
+            ->route('transactions.index', [
+                'year' => $year,
+            ])
             ->with(
                 'success',
                 'Nominal pembayaran berhasil diperbarui.'
@@ -769,23 +789,40 @@ class StudentPaymentController extends Controller
 
     public function destroy($id)
     {
-        $payment =
-            StudentPayment::findOrFail($id);
+        $payment = StudentPayment::with('student.user')
+            ->findOrFail($id);
 
-        $year =
-            Carbon::parse(
-                $payment->payment_month
-            )->year;
+        $year = Carbon::parse(
+            $payment->payment_month
+        )->year;
+
+        $student = $payment->student;
+        $amount = (float) $payment->amount;
+
+        $month = Carbon::parse(
+            $payment->payment_month
+        )->translatedFormat('F Y');
 
         $payment->delete();
 
+        if ($student && $student->user_id) {
+            Notification::create([
+                'user_id' => $student->user_id,
+                'type' => 'pembayaran_dihapus',
+                'title' => 'Catatan Pembayaran Dihapus',
+                'message' =>
+                    'Catatan pembayaran kas bulan ' .
+                    $month .
+                    ' sebesar Rp ' .
+                    number_format($amount, 0, ',', '.') .
+                    ' telah dihapus oleh bendahara.',
+            ]);
+        }
+
         return redirect()
-            ->route(
-                'transactions.index',
-                [
-                    'year' => $year,
-                ]
-            )
+            ->route('transactions.index', [
+                'year' => $year,
+            ])
             ->with(
                 'success',
                 'Catatan pembayaran berhasil dihapus.'

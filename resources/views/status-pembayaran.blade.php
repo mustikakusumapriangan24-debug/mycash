@@ -32,9 +32,7 @@
         font-family: "Plus Jakarta Sans", sans-serif;
     }
 
-    /* =========================================================
-       TOPBAR
-    ========================================================= */
+    /* TOPBAR */
 
     .payment-status-page .topbar {
         display: flex;
@@ -62,12 +60,7 @@
         height: 3px;
         margin-top: 16px;
         border-radius: 20px;
-        background:
-            linear-gradient(
-                90deg,
-                var(--gold),
-                var(--gold-light)
-            );
+        background: linear-gradient(90deg, var(--gold), var(--gold-light));
     }
 
     .payment-status-page .topbar-right {
@@ -85,8 +78,7 @@
         border: 1px solid rgba(181, 154, 99, 0.28);
         border-radius: 12px;
         background: rgba(255, 255, 255, 0.88);
-        box-shadow:
-            0 5px 18px rgba(50, 35, 25, 0.045);
+        box-shadow: 0 5px 18px rgba(50, 35, 25, 0.045);
     }
 
     .payment-status-page .class-box > i {
@@ -117,13 +109,10 @@
         border-radius: 12px;
         color: var(--maroon);
         background: rgba(255, 255, 255, 0.88);
-        box-shadow:
-            0 5px 18px rgba(50, 35, 25, 0.045);
+        box-shadow: 0 5px 18px rgba(50, 35, 25, 0.045);
     }
 
-    /* =========================================================
-       SUMMARY HEADER
-    ========================================================= */
+    /* SUMMARY */
 
     .payment-status-page .payment-summary {
         display: grid;
@@ -135,8 +124,7 @@
         border: 1px solid var(--border);
         border-radius: 16px;
         background: rgba(255, 254, 252, 0.96);
-        box-shadow:
-            0 8px 24px rgba(45, 28, 20, 0.05);
+        box-shadow: 0 8px 24px rgba(45, 28, 20, 0.05);
     }
 
     .payment-status-page .summary-title {
@@ -171,9 +159,14 @@
         font-size: 10px;
     }
 
-    /* =========================================================
-       YEAR SELECT
-    ========================================================= */
+    /* FILTER */
+
+    .payment-status-page .filter-form {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
 
     .payment-status-page .year-selector {
         display: flex;
@@ -201,13 +194,64 @@
         cursor: pointer;
     }
 
-    .payment-status-page .year-selector select:focus {
+    .payment-status-page .year-selector select:focus,
+    .payment-status-page .search-input:focus {
         border-color: var(--gold);
     }
 
-    /* =========================================================
-       FEE INFORMATION
-    ========================================================= */
+    .payment-status-page .search-box {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .payment-status-page .search-box i {
+        position: absolute;
+        left: 12px;
+        color: var(--text-soft);
+        font-size: 12px;
+    }
+
+    .payment-status-page .search-input {
+        width: 210px;
+        padding: 10px 12px 10px 34px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        outline: none;
+        color: var(--text);
+        background: white;
+        font-family: inherit;
+        font-size: 11px;
+    }
+
+    .payment-status-page .search-button {
+        padding: 10px 14px;
+        border: none;
+        border-radius: 9px;
+        color: white;
+        background: var(--maroon);
+        font-family: inherit;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .payment-status-page .search-button:hover {
+        background: var(--maroon-dark);
+    }
+
+    .payment-status-page .reset-button {
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        color: var(--text-soft);
+        background: white;
+        font-family: inherit;
+        font-size: 10px;
+        text-decoration: none;
+    }
+
+    /* FEE INFORMATION */
 
     .payment-status-page .fee-information {
         display: flex;
@@ -230,17 +274,14 @@
         color: var(--maroon);
     }
 
-    /* =========================================================
-       MAIN TABLE PANEL
-    ========================================================= */
+    /* PANEL */
 
     .payment-status-page .panel {
         padding: 22px;
         border: 1px solid var(--border);
         border-radius: 16px;
         background: rgba(255, 254, 252, 0.97);
-        box-shadow:
-            0 8px 24px rgba(45, 28, 20, 0.05);
+        box-shadow: 0 8px 24px rgba(45, 28, 20, 0.05);
     }
 
     .payment-status-page .panel-header {
@@ -266,9 +307,7 @@
         font-weight: 700;
     }
 
-    /* =========================================================
-       TABLE
-    ========================================================= */
+    /* TABLE */
 
     .payment-status-page .table-wrapper {
         width: 100%;
@@ -349,9 +388,7 @@
         font-size: 8px;
     }
 
-    /* =========================================================
-       PAYMENT CELL
-    ========================================================= */
+    /* PAYMENT CELL */
 
     .payment-status-page .payment-cell {
         min-width: 60px;
@@ -394,9 +431,7 @@
         white-space: nowrap;
     }
 
-    /* =========================================================
-       EMPTY STATE
-    ========================================================= */
+    /* EMPTY STATE */
 
     .payment-status-page .empty-payment {
         padding: 55px 20px !important;
@@ -422,9 +457,54 @@
         font-size: 10px;
     }
 
-    /* =========================================================
-       NOTE
-    ========================================================= */
+    /* PAGINATION */
+
+    .payment-status-page .pagination-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 18px;
+    }
+
+    .payment-status-page .pagination-info {
+        color: var(--text-soft);
+        font-size: 10px;
+    }
+
+    .payment-status-page .pagination-buttons {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .payment-status-page .page-arrow {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        color: var(--maroon);
+        background: white;
+        text-decoration: none;
+        transition: 0.2s ease;
+    }
+
+    .payment-status-page .page-arrow:hover {
+        border-color: var(--gold);
+        background: var(--cream-light);
+    }
+
+    .payment-status-page .page-arrow.disabled {
+        color: #C9C1B8;
+        background: #F7F4F0;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    /* NOTE */
 
     .payment-status-page .table-footer {
         display: flex;
@@ -443,16 +523,14 @@
         color: var(--gold);
     }
 
-    /* =========================================================
-       RESPONSIVE
-    ========================================================= */
+    /* RESPONSIVE */
 
     @media (max-width: 1000px) {
         .payment-status-page .payment-summary {
             grid-template-columns: 1fr;
         }
 
-        .payment-status-page .year-selector {
+        .payment-status-page .filter-form {
             justify-content: flex-start;
         }
     }
@@ -470,23 +548,38 @@
         .payment-status-page .class-box {
             flex: 1;
         }
+
+        .payment-status-page .filter-form {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .payment-status-page .search-box,
+        .payment-status-page .search-input {
+            width: 100%;
+        }
+
+        .payment-status-page .year-selector {
+            justify-content: flex-start;
+        }
+
+        .payment-status-page .pagination-wrapper {
+            align-items: flex-start;
+            flex-direction: column;
+        }
     }
 </style>
 
 
 <div class="payment-status-page">
 
-    <!-- =====================================================
-         TOPBAR
-    ====================================================== -->
+    <!-- TOPBAR -->
 
     <header class="topbar">
 
         <div class="welcome">
 
-            <h2>
-                Status Pembayaran Kas
-            </h2>
+            <h2>Status Pembayaran Kas</h2>
 
             <p>
                 Pantau pembayaran iuran kas setiap siswa
@@ -504,15 +597,8 @@
                 <i class="fa-solid fa-users"></i>
 
                 <div>
-
-                    <span>
-                        Kelas
-                    </span>
-
-                    <strong>
-                        XI RPL 1
-                    </strong>
-
+                    <span>Kelas</span>
+                    <strong>XI RPL 1</strong>
                 </div>
 
             </div>
@@ -526,9 +612,7 @@
     </header>
 
 
-    <!-- =====================================================
-         SUMMARY
-    ====================================================== -->
+    <!-- SUMMARY -->
 
     <section class="payment-summary">
 
@@ -539,106 +623,115 @@
             </div>
 
             <div>
-
-                <h3>
-                    Pembayaran Iuran Kas
-                </h3>
+                <h3>Pembayaran Iuran Kas</h3>
 
                 <p>
                     Rekap pembayaran siswa berdasarkan bulan.
                 </p>
-
             </div>
 
         </div>
 
 
-        <!-- YEAR -->
+        <!-- SEARCH AND YEAR FILTER -->
 
         <form
             method="GET"
             action="{{ url('/status-pembayaran') }}"
-            class="year-selector"
+            class="filter-form"
         >
 
-            <label for="year">
-                Tahun
-            </label>
+            <div class="search-box">
 
-            <select
-                name="year"
-                id="year"
-                onchange="this.form.submit()"
-            >
+                <i class="fa-solid fa-magnifying-glass"></i>
 
-                @for(
-                    $year = now()->year;
-                    $year >= now()->year - 5;
-                    $year--
-                )
+                <input
+                    type="text"
+                    name="search"
+                    class="search-input"
+                    placeholder="Cari nama atau NIS siswa..."
+                    value="{{ request('search') }}"
+                >
 
-                    <option
-                        value="{{ $year }}"
-                        {{ (int)($selectedYear ?? now()->year) === $year ? 'selected' : '' }}
-                    >
-                        {{ $year }}
-                    </option>
+            </div>
 
-                @endfor
+            <div class="year-selector">
 
-            </select>
+                <label for="year">Tahun</label>
+
+                <select
+                    name="year"
+                    id="year"
+                    onchange="this.form.submit()"
+                >
+
+                    @for(
+                        $year = now()->year;
+                        $year >= now()->year - 5;
+                        $year--
+                    )
+
+                        <option
+                            value="{{ $year }}"
+                            {{ (int)($selectedYear ?? now()->year) === $year ? 'selected' : '' }}
+                        >
+                            {{ $year }}
+                        </option>
+
+                    @endfor
+
+                </select>
+
+            </div>
+
+            <button type="submit" class="search-button">
+                Cari
+            </button>
+
+            @if(request('search'))
+                <a
+                    href="{{ url('/status-pembayaran') }}?year={{ $selectedYear ?? now()->year }}"
+                    class="reset-button"
+                >
+                    Reset
+                </a>
+            @endif
 
         </form>
 
     </section>
 
 
-    <!-- =====================================================
-         FEE INFORMATION
-    ====================================================== -->
+    <!-- FEE INFORMATION -->
 
     <div class="fee-information">
 
         <i class="fa-solid fa-circle-info"></i>
 
         <span>
-
             Iuran wajib setiap siswa:
 
             <strong>
-                Rp {{ number_format(
-                    $monthlyFee ?? 10000,
-                    0,
-                    ',',
-                    '.'
-                ) }}
+                Rp {{ number_format($monthlyFee ?? 10000, 0, ',', '.') }}
             </strong>
 
             per bulan.
-
         </span>
 
     </div>
 
 
-    <!-- =====================================================
-         TABLE
-    ====================================================== -->
+    <!-- TABLE -->
 
     <section class="panel">
 
         <div class="panel-header">
 
-            <h3>
-                Daftar Pembayaran Siswa
-            </h3>
+            <h3>Daftar Pembayaran Siswa</h3>
 
             <div class="student-badge">
-
-                {{ collect($studentPayments ?? [])->count() }}
-
+                {{ $students->total() ?? collect($studentPayments ?? [])->count() }}
                 Siswa
-
             </div>
 
         </div>
@@ -652,14 +745,9 @@
 
                     <tr>
 
-                        <th>
-                            No
-                        </th>
+                        <th>No</th>
 
-                        <th>
-                            Nama Siswa
-                        </th>
-
+                        <th>Nama Siswa</th>
 
                         @foreach(
                             $studentPayments->first()['months'] ?? []
@@ -672,10 +760,7 @@
 
                         @endforeach
 
-
-                        <th>
-                            Total
-                        </th>
+                        <th>Total</th>
 
                     </tr>
 
@@ -684,17 +769,14 @@
 
                 <tbody>
 
-                    @forelse(
-                        $studentPayments ?? []
-                        as $index => $data
-                    )
+                    @forelse($studentPayments ?? [] as $index => $data)
 
                         <tr>
 
                             <!-- NUMBER -->
 
                             <td class="number-cell">
-                                {{ $index + 1 }}
+                                {{ ($students->firstItem() ?? 1) + $index }}
                             </td>
 
 
@@ -706,15 +788,10 @@
                                     {{ $data['student']->name }}
                                 </div>
 
-                                @if(
-                                    !empty($data['student']->nis)
-                                )
+                                @if(!empty($data['student']->nis))
 
                                     <div class="student-subtitle">
-
-                                        NIS:
-                                        {{ $data['student']->nis }}
-
+                                        NIS: {{ $data['student']->nis }}
                                     </div>
 
                                 @endif
@@ -724,10 +801,7 @@
 
                             <!-- MONTHS -->
 
-                            @foreach(
-                                $data['months']
-                                as $month
-                            )
+                            @foreach($data['months'] as $month)
 
                                 <td>
 
@@ -740,23 +814,9 @@
                                             disabled
                                         >
 
-                                        <span
-                                            class="
-                                                payment-amount
-                                                {{ $month['paid']
-                                                    ? 'paid'
-                                                    : 'unpaid'
-                                                }}
-                                            "
-                                        >
+                                        <span class="payment-amount {{ $month['paid'] ? 'paid' : 'unpaid' }}">
 
-                                            Rp
-                                            {{ number_format(
-                                                $month['amount'],
-                                                0,
-                                                ',',
-                                                '.'
-                                            ) }}
+                                            Rp {{ number_format($month['amount'], 0, ',', '.') }}
 
                                         </span>
 
@@ -771,14 +831,7 @@
 
                             <td class="payment-total">
 
-                                Rp
-
-                                {{ number_format(
-                                    $data['total'],
-                                    0,
-                                    ',',
-                                    '.'
-                                ) }}
+                                Rp {{ number_format($data['total'], 0, ',', '.') }}
 
                             </td>
 
@@ -788,20 +841,24 @@
 
                         <tr>
 
-                            <td
-                                colspan="15"
-                                class="empty-payment"
-                            >
+                            <td colspan="15" class="empty-payment">
 
                                 <i class="fa-regular fa-folder-open"></i>
 
                                 <strong>
-                                    Belum ada data siswa
+                                    @if(request('search'))
+                                        Siswa tidak ditemukan
+                                    @else
+                                        Belum ada data siswa
+                                    @endif
                                 </strong>
 
                                 <span>
-                                    Data pembayaran akan tampil
-                                    setelah siswa ditambahkan.
+                                    @if(request('search'))
+                                        Coba periksa kembali nama atau NIS yang kamu masukkan.
+                                    @else
+                                        Data pembayaran akan tampil setelah siswa ditambahkan.
+                                    @endif
                                 </span>
 
                             </td>
@@ -817,6 +874,70 @@
         </div>
 
 
+        <!-- PAGINATION -->
+
+        @if(isset($students) && $students->hasPages())
+
+            <div class="pagination-wrapper">
+
+                <div class="pagination-info">
+
+                    Menampilkan
+                    {{ $students->firstItem() }}
+                    -
+                    {{ $students->lastItem() }}
+                    dari
+                    {{ $students->total() }}
+                    siswa
+
+                </div>
+
+                <div class="pagination-buttons">
+
+                    @if($students->onFirstPage())
+
+                        <span class="page-arrow disabled">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </span>
+
+                    @else
+
+                        <a
+                            href="{{ $students->previousPageUrl() }}"
+                            class="page-arrow"
+                            aria-label="Halaman sebelumnya"
+                        >
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </a>
+
+                    @endif
+
+
+                    @if($students->hasMorePages())
+
+                        <a
+                            href="{{ $students->nextPageUrl() }}"
+                            class="page-arrow"
+                            aria-label="Halaman berikutnya"
+                        >
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+
+                    @else
+
+                        <span class="page-arrow disabled">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </span>
+
+                    @endif
+
+                </div>
+
+            </div>
+
+        @endif
+
+
         <!-- NOTE -->
 
         <div class="table-footer">
@@ -829,12 +950,7 @@
                 nominal pembayaran pada bulan tersebut telah
                 mencapai Rp
 
-                {{ number_format(
-                    $monthlyFee ?? 10000,
-                    0,
-                    ',',
-                    '.'
-                ) }}.
+                {{ number_format($monthlyFee ?? 10000, 0, ',', '.') }}.
 
             </span>
 

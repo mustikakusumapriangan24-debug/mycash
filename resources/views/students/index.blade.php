@@ -112,6 +112,51 @@
         color: var(--text-soft);
     }
 
+    .table-toolbar {
+        padding: 16px 22px;
+        display: flex;
+        justify-content: flex-end;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .search-form {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 280px;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 10px 13px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        outline: none;
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: 11px;
+        color: var(--text);
+        background: #FFFEFC;
+    }
+
+    .search-input:focus {
+        border-color: var(--gold);
+        box-shadow: 0 0 0 3px rgba(181, 154, 99, .10);
+    }
+
+    .search-btn {
+        padding: 10px 13px;
+        border: none;
+        border-radius: 9px;
+        background: var(--maroon);
+        color: white;
+        cursor: pointer;
+        transition: .2s;
+    }
+
+    .search-btn:hover {
+        background: var(--maroon-dark);
+    }
+
     .table-wrapper {
         overflow-x: auto;
     }
@@ -204,6 +249,53 @@
 
     .empty-state p {
         font-size: 12px;
+    }
+
+    /* PAGINATION PANAH */
+    .pagination-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 22px;
+        border-top: 1px solid var(--border);
+    }
+
+    .pagination-info {
+        font-size: 10px;
+        color: var(--text-soft);
+    }
+
+    .pagination-arrows {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .pagination-arrows a,
+    .pagination-arrows span {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--maroon);
+        text-decoration: none;
+        font-size: 12px;
+        background: white;
+        transition: .2s;
+    }
+
+    .pagination-arrows a:hover {
+        background: var(--maroon);
+        color: white;
+        border-color: var(--maroon);
+    }
+
+    .pagination-arrows .disabled {
+        opacity: .35;
+        cursor: not-allowed;
     }
 
     .modal {
@@ -303,6 +395,21 @@
             align-items: flex-start;
         }
     }
+
+    @media (max-width: 500px) {
+        .table-toolbar {
+            justify-content: stretch;
+        }
+
+        .search-form {
+            width: 100%;
+        }
+
+        .pagination-footer {
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+    }
 </style>
 
 <div class="page-header">
@@ -349,10 +456,33 @@
         </div>
     </div>
 
+    {{-- FORM PENCARIAN --}}
+    <div class="table-toolbar">
+        <form
+            action="{{ url()->current() }}"
+            method="GET"
+            class="search-form"
+        >
+            <input
+                type="text"
+                name="search"
+                class="search-input"
+                placeholder="Cari nama, NIS, atau nomor HP..."
+                value="{{ $search ?? '' }}"
+            >
+
+            <button
+                type="submit"
+                class="search-btn"
+                title="Cari"
+            >
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+        </form>
+    </div>
+
     <div class="table-wrapper">
-
         <table>
-
             <thead>
                 <tr>
                     <th width="6%">No</th>
@@ -362,10 +492,7 @@
                     <th width="18%">No HP / WA</th>
 
                     @if($canManageStudents)
-                        <th
-                            width="12%"
-                            style="text-align:center;"
-                        >
+                        <th width="12%" style="text-align:center;">
                             Aksi
                         </th>
                     @endif
@@ -373,13 +500,10 @@
             </thead>
 
             <tbody>
-
                 @forelse($students as $index => $student)
-
                     <tr>
-
                         <td class="number">
-                            {{ $index + 1 }}
+                            {{ $students->firstItem() + $index }}
                         </td>
 
                         <td class="nis">
@@ -393,21 +517,15 @@
                         </td>
 
                         <td>
-
                             @if($student->gender === 'L')
-
                                 <span class="gender-badge gender-l">
                                     Laki-laki
                                 </span>
-
                             @else
-
                                 <span class="gender-badge gender-p">
                                     Perempuan
                                 </span>
-
                             @endif
-
                         </td>
 
                         <td>
@@ -415,11 +533,8 @@
                         </td>
 
                         @if($canManageStudents)
-
                             <td>
-
                                 <div class="action-buttons">
-
                                     <button
                                         type="button"
                                         class="btn btn-warning"
@@ -441,7 +556,6 @@
                                         style="display:inline;"
                                         onsubmit="return confirm('Yakin ingin menghapus siswa ini?');"
                                     >
-
                                         @csrf
                                         @method('DELETE')
 
@@ -452,55 +566,84 @@
                                         >
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
-
                                     </form>
-
                                 </div>
-
                             </td>
-
                         @endif
-
                     </tr>
-
                 @empty
-
                     <tr>
-
-                        <td
-                            colspan="{{ $canManageStudents ? 6 : 5 }}"
-                        >
-
+                        <td colspan="{{ $canManageStudents ? 6 : 5 }}">
                             <div class="empty-state">
-
                                 <i class="fa-solid fa-users"></i>
 
-                                <p>
-                                    Belum ada data siswa.
-                                </p>
-
-                                @if($canManageStudents)
-
-                                    <p style="margin-top:5px;">
-                                        Silakan klik
-                                        "Tambah Siswa"
-                                        untuk menambahkan data.
+                                @if(!empty($search))
+                                    <p>
+                                        Data siswa dengan kata kunci
+                                        "{{ $search }}" tidak ditemukan.
+                                    </p>
+                                @else
+                                    <p>
+                                        Belum ada data siswa.
                                     </p>
 
+                                    @if($canManageStudents)
+                                        <p style="margin-top:5px;">
+                                            Silakan klik "Tambah Siswa"
+                                            untuk menambahkan data.
+                                        </p>
+                                    @endif
                                 @endif
-
                             </div>
-
                         </td>
-
                     </tr>
-
                 @endforelse
-
             </tbody>
-
         </table>
+    </div>
 
+    {{-- PAGINATION PANAH --}}
+    <div class="pagination-footer">
+
+        <div class="pagination-info">
+            @if($students->total() > 0)
+                Menampilkan {{ $students->firstItem() }}
+                - {{ $students->lastItem() }}
+                dari {{ $students->total() }} siswa
+            @else
+                Tidak ada data siswa
+            @endif
+        </div>
+
+        <div class="pagination-arrows">
+
+            @if($students->onFirstPage())
+                <span class="disabled" title="Halaman sebelumnya">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </span>
+            @else
+                <a
+                    href="{{ $students->previousPageUrl() }}"
+                    title="Halaman sebelumnya"
+                >
+                    <i class="fa-solid fa-chevron-left"></i>
+                </a>
+            @endif
+
+            @if($students->hasMorePages())
+                <a
+                    href="{{ $students->nextPageUrl() }}"
+                    title="Halaman berikutnya"
+                >
+                    <i class="fa-solid fa-chevron-right"></i>
+                </a>
+            @else
+                <span class="disabled" title="Halaman berikutnya">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </span>
+            @endif
+
+        </div>
     </div>
 
 </div>
@@ -513,14 +656,10 @@
 @if($canManageStudents)
 
 <div class="modal" id="addModal">
-
     <div class="modal-content">
 
         <div class="modal-header">
-
-            <h3>
-                Tambah Data Siswa
-            </h3>
+            <h3>Tambah Data Siswa</h3>
 
             <button
                 type="button"
@@ -529,36 +668,28 @@
             >
                 &times;
             </button>
-
         </div>
 
         <form
             action="{{ route('students.store') }}"
             method="POST"
         >
-
             @csrf
 
             <div class="form-group">
-
-                <label>
-                    NIS
-                </label>
+                <label>NIS</label>
 
                 <input
                     type="text"
                     name="nis"
                     class="form-control"
                     placeholder="Masukkan NIS"
+                    required
                 >
-
             </div>
 
             <div class="form-group">
-
-                <label>
-                    Nama Lengkap Siswa
-                </label>
+                <label>Nama Lengkap Siswa</label>
 
                 <input
                     type="text"
@@ -567,38 +698,23 @@
                     placeholder="Masukkan nama lengkap"
                     required
                 >
-
             </div>
 
             <div class="form-group">
-
-                <label>
-                    Jenis Kelamin
-                </label>
+                <label>Jenis Kelamin</label>
 
                 <select
                     name="gender"
                     class="form-control"
                     required
                 >
-
-                    <option value="L">
-                        Laki-laki
-                    </option>
-
-                    <option value="P">
-                        Perempuan
-                    </option>
-
+                    <option value="L">Laki-laki</option>
+                    <option value="P">Perempuan</option>
                 </select>
-
             </div>
 
             <div class="form-group">
-
-                <label>
-                    No HP / WA
-                </label>
+                <label>No HP / WA</label>
 
                 <input
                     type="text"
@@ -606,11 +722,21 @@
                     class="form-control"
                     placeholder="Masukkan nomor HP / WhatsApp"
                 >
+            </div>
 
+            <div class="form-group">
+                <label>Email Akun Siswa</label>
+
+                <input
+                    type="email"
+                    name="email"
+                    class="form-control"
+                    placeholder="Masukkan email siswa"
+                    required
+                >
             </div>
 
             <div class="modal-actions">
-
                 <button
                     type="button"
                     class="btn btn-cancel"
@@ -626,13 +752,9 @@
                     <i class="fa-solid fa-floppy-disk"></i>
                     Simpan Siswa
                 </button>
-
             </div>
-
         </form>
-
     </div>
-
 </div>
 
 
@@ -641,14 +763,10 @@
 {{-- ========================================================= --}}
 
 <div class="modal" id="editModal">
-
     <div class="modal-content">
 
         <div class="modal-header">
-
-            <h3>
-                Edit Data Siswa
-            </h3>
+            <h3>Edit Data Siswa</h3>
 
             <button
                 type="button"
@@ -657,37 +775,29 @@
             >
                 &times;
             </button>
-
         </div>
 
         <form
             id="editForm"
             method="POST"
         >
-
             @csrf
             @method('PUT')
 
             <div class="form-group">
-
-                <label>
-                    NIS
-                </label>
+                <label>NIS</label>
 
                 <input
                     type="text"
                     name="nis"
                     id="edit_nis"
                     class="form-control"
+                    required
                 >
-
             </div>
 
             <div class="form-group">
-
-                <label>
-                    Nama Lengkap Siswa
-                </label>
+                <label>Nama Lengkap Siswa</label>
 
                 <input
                     type="text"
@@ -696,14 +806,10 @@
                     class="form-control"
                     required
                 >
-
             </div>
 
             <div class="form-group">
-
-                <label>
-                    Jenis Kelamin
-                </label>
+                <label>Jenis Kelamin</label>
 
                 <select
                     name="gender"
@@ -711,24 +817,13 @@
                     class="form-control"
                     required
                 >
-
-                    <option value="L">
-                        Laki-laki
-                    </option>
-
-                    <option value="P">
-                        Perempuan
-                    </option>
-
+                    <option value="L">Laki-laki</option>
+                    <option value="P">Perempuan</option>
                 </select>
-
             </div>
 
             <div class="form-group">
-
-                <label>
-                    No HP / WA
-                </label>
+                <label>No HP / WA</label>
 
                 <input
                     type="text"
@@ -736,11 +831,21 @@
                     id="edit_phone"
                     class="form-control"
                 >
+            </div>
 
+            <div class="form-group">
+                <label>Email Akun Siswa</label>
+
+                <input
+                    type="email"
+                    name="email"
+                    id="edit_email"
+                    class="form-control"
+                    required
+                >
             </div>
 
             <div class="modal-actions">
-
                 <button
                     type="button"
                     class="btn btn-cancel"
@@ -756,33 +861,22 @@
                     <i class="fa-solid fa-floppy-disk"></i>
                     Perbarui Siswa
                 </button>
-
             </div>
-
         </form>
-
     </div>
-
 </div>
 
 @endif
 
 
 <script>
-
     function openModal(modalId) {
-
         document.getElementById(modalId).style.display = 'flex';
-
     }
-
 
     function closeModal(modalId) {
-
         document.getElementById(modalId).style.display = 'none';
-
     }
-
 
     function openEditModal(
         id,
@@ -791,7 +885,6 @@
         gender,
         phone
     ) {
-
         document.getElementById('editForm').action =
             '/students/' + id;
 
@@ -808,20 +901,13 @@
             phone ?? '';
 
         openModal('editModal');
-
     }
 
-
     window.addEventListener('click', function(event) {
-
         if (event.target.classList.contains('modal')) {
-
             event.target.style.display = 'none';
-
         }
-
     });
-
 </script>
 
 @endsection

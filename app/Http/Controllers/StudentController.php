@@ -3,36 +3,67 @@
 namespace App\Http\Controllers;
 
 use App\Models\Student;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class StudentController extends Controller
 {
     // =====================================================
-    // DATA SISWA
+    // DATA SISWA BENDAHARA
     // =====================================================
 
-    public function index()
+    public function index(Request $request)
     {
-        $students = Student::orderBy('name', 'asc')->get();
+        $search = trim($request->input('search', ''));
 
-        return view('students.index', compact('students'));
+        $students = Student::with('user')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('nis', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhereHas('user', function ($userQuery) use ($search) {
+                            $userQuery->where('email', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->orderBy('name', 'asc')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('students.index', compact('students', 'search'));
     }
-
 
     // =====================================================
     // DATA SISWA WALI KELAS
     // =====================================================
 
-    public function waliKelasIndex()
+    public function waliKelasIndex(Request $request)
     {
-        $students = Student::orderBy('name', 'asc')->get();
+        $search = trim($request->input('search', ''));
 
-        return view('wali-kelas.data-siswa', compact('students'));
+        $students = Student::with('user')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('nis', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhereHas('user', function ($userQuery) use ($search) {
+                            $userQuery->where('email', 'like', "%{$search}%");
+                        });
+                });
+            })
+            ->orderBy('name', 'asc')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('wali-kelas.data-siswa', compact('students', 'search'));
     }
 
-
     // =====================================================
-    // TAMBAH DATA SISWA
+    // TAMBAH SISWA + MEMBUAT AKUN LOGIN
     // =====================================================
 
     public function store(Request $request)
@@ -41,29 +72,40 @@ class StudentController extends Controller
             abort(403, 'Anda tidak memiliki akses untuk menambah data siswa.');
         }
 
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'nis' => 'nullable|string|max:50',
+            'nis' => 'required|string|max:50|unique:students,nis',
             'gender' => 'required|in:L,P',
             'phone' => 'nullable|string|max:20',
+            'email' => 'required|email|max:255|unique:users,email',
         ]);
 
-        Student::create([
-            'nis' => $request->nis,
-            'name' => strtoupper($request->name),
-            'gender' => $request->gender,
-            'phone' => $request->phone,
-        ]);
+        DB::transaction(function () use ($validated) {
+            $user = User::create([
+                'name' => strtoupper($validated['name']),
+                'email' => strtolower($validated['email']),
+                'password' => $validated['nis'],
+                'role' => 'siswa',
+                'status' => 'aktif',
+            ]);
+
+            Student::create([
+                'user_id' => $user->id,
+                'nis' => $validated['nis'],
+                'name' => strtoupper($validated['name']),
+                'gender' => $validated['gender'],
+                'phone' => $validated['phone'] ?? null,
+            ]);
+        });
 
         return redirect()->back()->with(
             'success',
-            'Data siswa berhasil ditambahkan!'
+            'Data siswa dan akun login berhasil dibuat!'
         );
     }
 
-
     // =====================================================
-    // UPDATE DATA SISWA
+    // UPDATE DATA SISWA + EMAIL AKUN
     // =====================================================
 
     public function update(Request $request, $id)
@@ -72,28 +114,53 @@ class StudentController extends Controller
             abort(403, 'Anda tidak memiliki akses untuk mengubah data siswa.');
         }
 
-        $request->validate([
+        $student = Student::with('user')->findOrFail($id);
+
+        $emailRule = Rule::unique('users', 'email');
+
+        if ($student->user_id) {
+            $emailRule->ignore($student->user_id);
+        }
+
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'nis' => 'nullable|string|max:50',
+            'nis' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('students', 'nis')->ignore($student->id),
+            ],
             'gender' => 'required|in:L,P',
             'phone' => 'nullable|string|max:20',
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                $emailRule,
+            ],
         ]);
 
-        $student = Student::findOrFail($id);
+        DB::transaction(function () use ($student, $validated) {
+            $student->update([
+                'nis' => $validated['nis'],
+                'name' => strtoupper($validated['name']),
+                'gender' => $validated['gender'],
+                'phone' => $validated['phone'] ?? null,
+            ]);
 
-        $student->update([
-            'nis' => $request->nis,
-            'name' => strtoupper($request->name),
-            'gender' => $request->gender,
-            'phone' => $request->phone,
-        ]);
+            if ($student->user) {
+                $student->user->update([
+                    'name' => strtoupper($validated['name']),
+                    'email' => strtolower($validated['email']),
+                ]);
+            }
+        });
 
         return redirect()->back()->with(
             'success',
-            'Data siswa berhasil diperbarui!'
+            'Data siswa dan email akun berhasil diperbarui!'
         );
     }
-
 
     // =====================================================
     // HAPUS DATA SISWA

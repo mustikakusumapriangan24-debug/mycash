@@ -1,27 +1,34 @@
+@extends(
+    auth()->user()->role === 'wali_kelas'
+        ? 'layouts.wali-kelas'
+        : 'layouts.bendahara'
+)
+
 @php
-    // Gunakan Bahasa Indonesia untuk Carbon
     \Carbon\Carbon::setLocale('id');
 
-    $layout = auth()->user()->role === 'wali_kelas'
-        ? 'layouts.wali-kelas'
-        : 'layouts.bendahara';
-@endphp
+    $startDate = $startDate ?? '';
+    $endDate = $endDate ?? '';
+    $type = $type ?? 'all';
+    $category = $category ?? 'all';
 
-@extends($layout)
+    $transactions = $transactions ?? collect();
+    $students = $students ?? collect();
+    $paymentDetails = $paymentDetails ?? collect();
+    $categories = $categories ?? collect();
+
+    $totalSaldo = $totalSaldo ?? 0;
+    $totalPemasukan = $totalPemasukan ?? 0;
+    $totalPengeluaran = $totalPengeluaran ?? 0;
+    $totalTransaksi = $totalTransaksi ?? 0;
+@endphp
 
 @section('content')
 
 <style>
-    .report-page {
-        width: 100%;
-    }
+    .report-page { width: 100%; }
 
-    /* =========================
-       HEADER
-    ========================= */
-    .report-header {
-        margin-bottom: 22px;
-    }
+    .report-header { margin-bottom: 22px; }
 
     .report-header h1 {
         margin: 0;
@@ -37,9 +44,6 @@
         font-size: 12px;
     }
 
-    /* =========================
-       FILTER
-    ========================= */
     .report-filter {
         display: flex;
         align-items: center;
@@ -69,6 +73,7 @@
     .filter-form {
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 8px;
     }
 
@@ -91,12 +96,10 @@
         outline: none;
     }
 
-    .filter-form select {
-        min-width: 120px;
-    }
+    .filter-form select { min-width: 120px; }
 
     .filter-form input {
-        width: 70px;
+        width: 140px;
         text-align: center;
     }
 
@@ -106,6 +109,9 @@
     }
 
     .filter-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         height: 34px;
         padding: 0 14px;
         border: 0;
@@ -114,20 +120,16 @@
         color: #FFFFFF;
         font-size: 11px;
         font-weight: 700;
+        text-decoration: none;
         cursor: pointer;
         transition: .2s ease;
     }
 
-    .filter-button:hover {
-        background: #54251F;
-    }
+    .filter-button:hover { background: #54251F; }
 
-    /* =========================
-       SUMMARY
-    ========================= */
     .report-summary {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 15px;
         margin-bottom: 20px;
     }
@@ -153,27 +155,15 @@
         color: #3E3D38;
         font-size: 20px;
         font-weight: 800;
+        overflow-wrap: anywhere;
     }
 
-    .summary-card.saldo .summary-value {
-        color: #803E2F;
-    }
+    .summary-card.saldo .summary-value,
+    .summary-card.total .summary-value { color: #803E2F; }
 
-    .summary-card.income .summary-value {
-        color: #56856C;
-    }
+    .summary-card.income .summary-value { color: #56856C; }
+    .summary-card.expense .summary-value { color: #A53636; }
 
-    .summary-card.expense .summary-value {
-        color: #A53636;
-    }
-
-    .summary-card.total .summary-value {
-        color: #803E2F;
-    }
-
-    /* =========================
-       REPORT CARD
-    ========================= */
     .report-card {
         overflow: hidden;
         background: #FFFEFC;
@@ -186,6 +176,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 16px;
         padding: 18px 20px;
         border-bottom: 1px solid #E8E0D7;
     }
@@ -204,6 +195,49 @@
         font-size: 10px;
     }
 
+    .report-export-buttons {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .report-export-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 35px;
+        padding: 0 13px;
+        border-radius: 7px;
+        font-family: "Plus Jakarta Sans", sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: .2s ease;
+    }
+
+    .report-export-button.pdf {
+        background: #803E2F;
+        border: 1px solid #803E2F;
+        color: #FFFFFF;
+    }
+
+    .report-export-button.pdf:hover {
+        background: #54251F;
+        border-color: #54251F;
+    }
+
+    .report-export-button.excel {
+        background: #EAF5EF;
+        border: 1px solid #CFE5D8;
+        color: #56856C;
+    }
+
+    .report-export-button.excel:hover { background: #D9EDE1; }
+
     .period-badge {
         padding: 6px 10px;
         border: 1px solid #DECFAE;
@@ -212,15 +246,10 @@
         color: #876B25;
         font-size: 10px;
         font-weight: 700;
+        white-space: nowrap;
     }
 
-    /* =========================
-       TABLE
-    ========================= */
-    .table-wrapper {
-        width: 100%;
-        overflow-x: auto;
-    }
+    .table-wrapper { width: 100%; overflow-x: auto; }
 
     .report-table {
         width: 100%;
@@ -255,23 +284,16 @@
         vertical-align: middle;
     }
 
-    .report-table tr:last-child td {
-        border-bottom: 0;
-    }
+    .report-table tr:last-child td { border-bottom: 0; }
 
     .main-row.has-detail {
         cursor: pointer;
         transition: background .15s ease;
     }
 
-    .main-row.has-detail:hover {
-        background: #FCF9F4;
-    }
+    .main-row.has-detail:hover { background: #FCF9F4; }
 
-    .number-cell {
-        color: #8B817B;
-        text-align: center;
-    }
+    .number-cell { color: #8B817B; text-align: center; }
 
     .date-cell {
         color: #5F5753;
@@ -314,6 +336,7 @@
     .normal-description {
         color: #756E69;
         font-weight: 500;
+        overflow-wrap: anywhere;
     }
 
     .type-badge {
@@ -324,15 +347,8 @@
         font-weight: 700;
     }
 
-    .type-badge.in {
-        background: #EAF5EF;
-        color: #56856C;
-    }
-
-    .type-badge.out {
-        background: #FAEDED;
-        color: #A53636;
-    }
+    .type-badge.in { background: #EAF5EF; color: #56856C; }
+    .type-badge.out { background: #FAEDED; color: #A53636; }
 
     .amount-cell {
         font-weight: 800;
@@ -340,17 +356,9 @@
         white-space: nowrap;
     }
 
-    .amount-cell.in {
-        color: #56856C;
-    }
+    .amount-cell.in { color: #56856C; }
+    .amount-cell.out { color: #A53636; }
 
-    .amount-cell.out {
-        color: #A53636;
-    }
-
-    /* =========================
-       DETAIL BUTTON
-    ========================= */
     .detail-button {
         width: 28px;
         height: 28px;
@@ -367,25 +375,15 @@
         border-color: #B59A63;
     }
 
-    /* =========================
-       DETAIL PEMBAYARAN
-    ========================= */
     .payment-detail-row {
         display: none;
         background: #FBF8F3;
     }
 
-    .payment-detail-row.show {
-        display: table-row;
-    }
+    .payment-detail-row.show { display: table-row; }
+    .payment-detail-row td { padding: 0 !important; }
 
-    .payment-detail-row td {
-        padding: 0 !important;
-    }
-
-    .payment-detail {
-        padding: 15px 20px 17px 65px;
-    }
+    .payment-detail { padding: 15px 20px 17px 65px; }
 
     .payment-detail-title {
         display: flex;
@@ -406,6 +404,7 @@
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
+        margin-bottom: 12px;
     }
 
     .payment-month {
@@ -434,30 +433,13 @@
         color: #A53636;
     }
 
-    .payment-month i {
-        font-size: 9px;
-    }
+    .payment-month i { font-size: 9px; }
+    .payment-month.paid i { color: #56856C; }
+    .payment-month.unpaid i { color: #A53636; }
 
-    .payment-month.paid i {
-        color: #56856C;
-    }
+    .payment-status { font-weight: 800; }
+    .partial-amount { margin-left: 2px; font-weight: 700; }
 
-    .payment-month.unpaid i {
-        color: #A53636;
-    }
-
-    .payment-status {
-        font-weight: 800;
-    }
-
-    .partial-amount {
-        margin-left: 2px;
-        font-weight: 700;
-    }
-
-    /* =========================
-       EMPTY
-    ========================= */
     .empty-report {
         padding: 45px 20px;
         text-align: center;
@@ -489,13 +471,8 @@
         text-align: right;
     }
 
-    /* =========================
-       RESPONSIVE
-    ========================= */
     @media (max-width: 1000px) {
-        .report-summary {
-            grid-template-columns: repeat(2, 1fr);
-        }
+        .report-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
     @media (max-width: 750px) {
@@ -504,50 +481,36 @@
             flex-direction: column;
         }
 
-        .filter-form {
-            width: 100%;
-            flex-wrap: wrap;
-        }
+        .filter-form { width: 100%; flex-wrap: wrap; }
 
         .report-card-header {
             align-items: flex-start;
             flex-direction: column;
-            gap: 10px;
         }
 
-        .payment-detail {
-            padding-left: 20px;
-        }
+        .report-export-buttons { justify-content: flex-start; }
+        .payment-detail { padding-left: 20px; }
     }
 
     @media (max-width: 550px) {
-        .report-summary {
-            grid-template-columns: 1fr;
-        }
+        .report-summary { grid-template-columns: 1fr; }
 
         .payment-month-list {
             display: grid;
             grid-template-columns: 1fr 1fr;
         }
 
-        .payment-month {
-            width: 100%;
-        }
+        .payment-month { width: 100%; flex-wrap: wrap; }
     }
 </style>
-
 
 <div class="report-page">
 
     {{-- HEADER --}}
     <div class="report-header">
         <h1>Laporan Kas</h1>
-
-        <p>
-            Ringkasan dan transaksi kas kelas.
-        </p>
+        <p>Ringkasan dan transaksi kas kelas.</p>
     </div>
-
 
     {{-- FILTER --}}
     <div class="report-filter">
@@ -556,132 +519,104 @@
             Periode
 
             <strong>
-                @if($selectedMonth === 'all')
-                    Semua Bulan {{ $selectedYear }}
+                @if($startDate || $endDate)
+                    {{ $startDate ? \Carbon\Carbon::parse($startDate)->format('d/m/Y') : 'Awal' }}
+                    -
+                    {{ $endDate ? \Carbon\Carbon::parse($endDate)->format('d/m/Y') : 'Sekarang' }}
                 @else
-                    {{ \Carbon\Carbon::create(
-                        $selectedYear,
-                        (int) $selectedMonth,
-                        1
-                    )->translatedFormat('F Y') }}
+                    Semua Tanggal
                 @endif
             </strong>
         </div>
 
+        <form method="GET" action="{{ route('laporan.index') }}" class="filter-form">
 
-        <form
-            method="GET"
-            action="{{ route('laporan.index') }}"
-            class="filter-form"
-        >
+            <label for="start_date">Dari</label>
+            <input
+                type="date"
+                name="start_date"
+                id="start_date"
+                value="{{ $startDate }}"
+            >
 
-            <label for="month">
-                Bulan
-            </label>
+            <label for="end_date">Sampai</label>
+            <input
+                type="date"
+                name="end_date"
+                id="end_date"
+                value="{{ $endDate }}"
+            >
 
-            <select name="month" id="month">
-
-                <option
-                    value="all"
-                    {{ $selectedMonth === 'all' ? 'selected' : '' }}
-                >
-                    Semua Bulan
+            <label for="type">Jenis</label>
+            <select name="type" id="type">
+                <option value="all" {{ $type === 'all' ? 'selected' : '' }}>
+                    Semua Jenis
                 </option>
-
-                @foreach([
-                    1 => 'Januari',
-                    2 => 'Februari',
-                    3 => 'Maret',
-                    4 => 'April',
-                    5 => 'Mei',
-                    6 => 'Juni',
-                    7 => 'Juli',
-                    8 => 'Agustus',
-                    9 => 'September',
-                    10 => 'Oktober',
-                    11 => 'November',
-                    12 => 'Desember',
-                ] as $number => $name)
-
-                    <option
-                        value="{{ $number }}"
-                        {{ (string) $selectedMonth === (string) $number ? 'selected' : '' }}
-                    >
-                        {{ $name }}
-                    </option>
-
-                @endforeach
-
+                <option value="in" {{ $type === 'in' ? 'selected' : '' }}>
+                    Pemasukan
+                </option>
+                <option value="out" {{ $type === 'out' ? 'selected' : '' }}>
+                    Pengeluaran
+                </option>
             </select>
 
+            <label for="category">Kategori</label>
+            <select name="category" id="category">
+                <option value="all" {{ $category === 'all' ? 'selected' : '' }}>
+                    Semua Kategori
+                </option>
 
-            <label for="year">
-                Tahun
-            </label>
+                @foreach($categories as $item)
+                    <option
+                        value="{{ $item }}"
+                        {{ $category === $item ? 'selected' : '' }}
+                    >
+                        {{ $item }}
+                    </option>
+                @endforeach
+            </select>
 
-            <input
-                type="number"
-                name="year"
-                id="year"
-                min="2020"
-                max="2100"
-                value="{{ $selectedYear }}"
-            >
-
-
-            <button
-                type="submit"
-                class="filter-button"
-            >
-                Tampilkan
+            <button type="submit" class="filter-button">
+                Filter
             </button>
 
+            <a
+                href="{{ route('laporan.index') }}"
+                class="filter-button"
+                style="background:#756E69;"
+            >
+                Reset
+            </a>
+
         </form>
-
     </div>
-
 
     {{-- RINGKASAN --}}
     <div class="report-summary">
 
         <div class="summary-card saldo">
-            <div class="summary-label">
-                Saldo
-            </div>
-
+            <div class="summary-label">Saldo</div>
             <div class="summary-value">
                 Rp{{ number_format($totalSaldo, 0, ',', '.') }}
             </div>
         </div>
 
-
         <div class="summary-card income">
-            <div class="summary-label">
-                Pemasukan
-            </div>
-
+            <div class="summary-label">Pemasukan</div>
             <div class="summary-value">
                 Rp{{ number_format($totalPemasukan, 0, ',', '.') }}
             </div>
         </div>
 
-
         <div class="summary-card expense">
-            <div class="summary-label">
-                Pengeluaran
-            </div>
-
+            <div class="summary-label">Pengeluaran</div>
             <div class="summary-value">
                 Rp{{ number_format($totalPengeluaran, 0, ',', '.') }}
             </div>
         </div>
 
-
         <div class="summary-card total">
-            <div class="summary-label">
-                Transaksi
-            </div>
-
+            <div class="summary-label">Transaksi</div>
             <div class="summary-value">
                 {{ number_format($totalTransaksi, 0, ',', '.') }}
             </div>
@@ -689,44 +624,40 @@
 
     </div>
 
-
     {{-- RIWAYAT TRANSAKSI --}}
     <div class="report-card">
 
         <div class="report-card-header">
-
             <div>
-                <h2>
-                    Riwayat Transaksi
-                </h2>
-
-                <p>
-                    Daftar transaksi pada periode yang dipilih.
-                </p>
+                <h2>Riwayat Transaksi</h2>
+                <p>Daftar transaksi berdasarkan filter yang dipilih.</p>
             </div>
 
+            {{-- TOMBOL EKSPOR --}}
+            <div class="report-export-buttons">
 
-            <div class="period-badge">
+                <a
+                    href="{{ route('laporan.export.pdf', request()->query()) }}"
+                    class="report-export-button pdf"
+                >
+                    <i class="fa-solid fa-file-pdf"></i>
+                    Unduh PDF
+                </a>
 
-                @if($selectedMonth === 'all')
-                    {{ $selectedYear }}
-                @else
-                    {{ \Carbon\Carbon::create(
-                        $selectedYear,
-                        (int) $selectedMonth,
-                        1
-                    )->translatedFormat('F Y') }}
-                @endif
+                <a
+                    href="{{ route('laporan.export.excel', request()->query()) }}"
+                    class="report-export-button excel"
+                >
+                    <i class="fa-solid fa-file-excel"></i>
+                    Unduh Excel
+                </a>
 
             </div>
-
         </div>
-
 
         @if($transactions->isNotEmpty())
 
             <div class="table-wrapper">
-
                 <table class="report-table">
 
                     <thead>
@@ -741,13 +672,10 @@
                         </tr>
                     </thead>
 
-
                     <tbody>
-
                         @foreach($transactions as $index => $transaction)
 
                             @php
-
                                 $details = $paymentDetails->get(
                                     $transaction->id,
                                     collect()
@@ -755,377 +683,267 @@
 
                                 $hasDetail = $details->isNotEmpty();
 
-
-                                /*
-                                 * Untuk Kas Siswa,
-                                 * Keterangan = nama lengkap siswa.
-                                 */
                                 $studentNames = $details
                                     ->map(function ($payment) use ($students) {
+                                        $student = $students->get($payment->student_id);
 
-                                        $student = $students->get(
-                                            $payment->student_id
-                                        );
-
-                                        return $student
-                                            ? $student->name
-                                            : null;
+                                        return $student ? $student->name : null;
                                     })
                                     ->filter()
                                     ->unique()
                                     ->values();
 
+                                $transactionDate = $transaction->created_at
+                                    ? \Carbon\Carbon::parse($transaction->created_at)
+                                    : null;
                             @endphp
-
 
                             {{-- TRANSAKSI UTAMA --}}
                             <tr
                                 class="main-row {{ $hasDetail ? 'has-detail' : '' }}"
-
                                 @if($hasDetail)
-                                    onclick="togglePaymentDetail({{ $transaction->id }})"
+                                    data-transaction-id="{{ $transaction->id }}"
                                 @endif
                             >
-
                                 <td class="number-cell">
                                     {{ $index + 1 }}
                                 </td>
 
-
                                 <td class="date-cell">
-
-                                    {{ $transaction->created_at->format('d/m/Y') }}
-
-                                    <br>
-
-                                    <small>
-                                        {{ $transaction->created_at->format('H:i') }}
-                                    </small>
-
+                                    @if($transactionDate)
+                                        {{ $transactionDate->format('d/m/Y') }}
+                                        <br>
+                                        <small>
+                                            {{ $transactionDate->format('H:i') }}
+                                        </small>
+                                    @else
+                                        —
+                                    @endif
                                 </td>
-
 
                                 <td class="category-cell">
                                     {{ $transaction->category ?? 'Transaksi Kas' }}
                                 </td>
 
-
                                 <td class="description-cell">
-
                                     @if(
-                                        $transaction->category === 'Kas Siswa'
+                                        ($transaction->category ?? '') === 'Kas Siswa'
                                         && $studentNames->isNotEmpty()
                                     )
-
                                         <span class="student-name-cell">
-
                                             <i class="fa-solid fa-user"></i>
-
                                             {{ $studentNames->implode(', ') }}
-
                                         </span>
-
                                     @else
-
                                         <span class="normal-description">
                                             {{ $transaction->description ?? 'Tidak ada keterangan' }}
                                         </span>
-
                                     @endif
-
                                 </td>
-
 
                                 <td>
-
                                     @if($transaction->type === 'in')
-
-                                        <span class="type-badge in">
-                                            Pemasukan
-                                        </span>
-
+                                        <span class="type-badge in">Pemasukan</span>
                                     @else
-
-                                        <span class="type-badge out">
-                                            Pengeluaran
-                                        </span>
-
+                                        <span class="type-badge out">Pengeluaran</span>
                                     @endif
-
                                 </td>
 
-
-                                <td class="amount-cell {{ $transaction->type }}">
-
-                                    {{ $transaction->type === 'in' ? '+' : '-' }}
-
-                                    Rp{{ number_format(
-                                        $transaction->amount,
-                                        0,
-                                        ',',
-                                        '.'
-                                    ) }}
-
+                                <td class="amount-cell {{ $transaction->type === 'in' ? 'in' : 'out' }}">
+                                    {{ $transaction->type === 'in' ? '+' : '-' }}Rp{{ number_format($transaction->amount, 0, ',', '.') }}
                                 </td>
-
 
                                 <td style="text-align:right;">
-
                                     @if($hasDetail)
-
                                         <button
                                             type="button"
                                             class="detail-button"
-
-                                            onclick="event.stopPropagation(); togglePaymentDetail({{ $transaction->id }})"
-
+                                            data-detail-button="{{ $transaction->id }}"
+                                            aria-expanded="false"
+                                            aria-label="Lihat detail pembayaran"
                                             title="Lihat detail pembayaran"
                                         >
-
-                                            <i
-                                                id="detail-icon-{{ $transaction->id }}"
-                                                class="fa-solid fa-chevron-down"
-                                            ></i>
-
+                                            <i class="fa-solid fa-chevron-down"></i>
                                         </button>
-
                                     @else
-
-                                        <span style="color:#C0B8B1;">
-                                            —
-                                        </span>
-
+                                        <span style="color:#C0B8B1;">—</span>
                                     @endif
-
                                 </td>
-
                             </tr>
 
-
-                            {{-- DETAIL --}}
+                            {{-- DETAIL PEMBAYARAN --}}
                             @if($hasDetail)
-
                                 <tr
                                     id="payment-detail-{{ $transaction->id }}"
                                     class="payment-detail-row"
                                 >
-
                                     <td colspan="7">
-
                                         <div class="payment-detail">
 
                                             <div class="payment-detail-title">
-
                                                 <i class="fa-solid fa-calendar-days"></i>
-
                                                 Detail Pembayaran
-
                                             </div>
 
-
                                             @php
-                                                $studentDetails = $details
-                                                    ->groupBy('student_id');
+                                                $studentDetails = $details->groupBy('student_id');
                                             @endphp
 
-
-                                            @foreach(
-                                                $studentDetails
-                                                as $studentId => $studentPayments
-                                            )
+                                            @foreach($studentDetails as $studentId => $studentPayments)
 
                                                 @php
-
-                                                    $monthStatus = [];
-
-                                                    foreach (
-                                                        $studentPayments
-                                                            ->groupBy(function ($payment) {
-
-                                                                return \Carbon\Carbon::parse(
-                                                                    $payment->payment_month
-                                                                )->format('Y-m');
-
-                                                            })
-                                                        as $month => $monthPayments
-                                                    ) {
-
-                                                        $monthAmount =
-                                                            $monthPayments->sum('amount');
-
-                                                        $monthLabel =
-                                                            \Carbon\Carbon::createFromFormat(
-                                                                'Y-m',
-                                                                $month
-                                                            )->translatedFormat('F');
-
-                                                        $monthStatus[] = [
-                                                            'label' => $monthLabel,
-                                                            'amount' => $monthAmount,
-                                                            'paid' => $monthAmount >= 10000,
-                                                        ];
-                                                    }
-
+                                                    $paymentsByMonth = $studentPayments
+                                                        ->filter(function ($payment) {
+                                                            return !empty($payment->payment_month);
+                                                        })
+                                                        ->groupBy(function ($payment) {
+                                                            return \Carbon\Carbon::parse(
+                                                                $payment->payment_month
+                                                            )->format('Y-m');
+                                                        });
                                                 @endphp
 
+                                                @if($paymentsByMonth->isNotEmpty())
 
-                                                <div class="payment-month-list">
+                                                    <div class="payment-month-list">
 
-                                                    @foreach($monthStatus as $status)
+                                                        @foreach($paymentsByMonth as $month => $monthPayments)
 
-                                                        @if($status['paid'])
+                                                            @php
+                                                                $monthAmount = $monthPayments->sum('amount');
 
-                                                            <div class="payment-month paid">
+                                                                $monthLabel = \Carbon\Carbon::parse(
+                                                                    $month . '-01'
+                                                                )->translatedFormat('F');
 
-                                                                <i class="fa-solid fa-circle-check"></i>
+                                                                $isPaid = $monthAmount >= 10000;
+                                                            @endphp
 
-                                                                <span>
-                                                                    {{ $status['label'] }}
-                                                                </span>
+                                                            @if($isPaid)
+                                                                <div class="payment-month paid">
+                                                                    <i class="fa-solid fa-circle-check"></i>
+                                                                    <span>{{ $monthLabel }}</span>
+                                                                    <span class="payment-status">Lunas</span>
+                                                                </div>
+                                                            @else
+                                                                <div class="payment-month unpaid">
+                                                                    <i class="fa-solid fa-circle-exclamation"></i>
+                                                                    <span>{{ $monthLabel }}</span>
+                                                                    <span class="payment-status">Belum Lunas</span>
+                                                                    <span class="partial-amount">
+                                                                        Rp{{ number_format($monthAmount, 0, ',', '.') }}/10.000
+                                                                    </span>
+                                                                </div>
+                                                            @endif
 
-                                                                <span class="payment-status">
-                                                                    Lunas
-                                                                </span>
+                                                        @endforeach
 
-                                                            </div>
+                                                    </div>
 
-                                                        @else
-
-                                                            <div class="payment-month unpaid">
-
-                                                                <i class="fa-solid fa-circle-exclamation"></i>
-
-                                                                <span>
-                                                                    {{ $status['label'] }}
-                                                                </span>
-
-                                                                <span class="payment-status">
-                                                                    Belum Lunas
-                                                                </span>
-
-                                                                <span class="partial-amount">
-                                                                    Rp{{ number_format(
-                                                                        $status['amount'],
-                                                                        0,
-                                                                        ',',
-                                                                        '.'
-                                                                    ) }}/10.000
-                                                                </span>
-
-                                                            </div>
-
-                                                        @endif
-
-                                                    @endforeach
-
-                                                </div>
+                                                @else
+                                                    <p class="normal-description">
+                                                        Belum ada detail bulan pembayaran.
+                                                    </p>
+                                                @endif
 
                                             @endforeach
 
                                         </div>
-
                                     </td>
-
                                 </tr>
-
                             @endif
 
                         @endforeach
-
                     </tbody>
 
                 </table>
-
             </div>
 
         @else
 
             <div class="empty-report">
-
                 <i class="fa-regular fa-folder-open"></i>
-
-                <h3>
-                    Belum Ada Transaksi
-                </h3>
-
-                <p>
-                    Belum ada transaksi pada periode ini.
-                </p>
-
+                <h3>Belum Ada Transaksi</h3>
+                <p>Belum ada transaksi yang sesuai dengan filter ini.</p>
             </div>
 
         @endif
 
     </div>
 
-
     <div class="report-footer">
-        Laporan MyCash • {{ $selectedYear }}
+        Laporan MyCash • {{ now()->format('Y') }}
     </div>
 
 </div>
 
-
 <script>
-    function togglePaymentDetail(transactionId) {
+    document.addEventListener('DOMContentLoaded', function () {
+        const detailButtons = document.querySelectorAll('[data-detail-button]');
 
-        const detailRow = document.getElementById(
-            'payment-detail-' + transactionId
-        );
+        function closeAllDetails() {
+            document.querySelectorAll('.payment-detail-row.show').forEach(function (row) {
+                row.classList.remove('show');
+            });
 
-        if (!detailRow) {
-            return;
+            document.querySelectorAll('[data-detail-button]').forEach(function (button) {
+                button.setAttribute('aria-expanded', 'false');
+
+                const icon = button.querySelector('i');
+
+                if (icon) {
+                    icon.className = 'fa-solid fa-chevron-down';
+                }
+            });
         }
 
-        const isShown =
-            detailRow.classList.contains('show');
+        function togglePaymentDetail(transactionId) {
+            const detailRow = document.getElementById(
+                'payment-detail-' + transactionId
+            );
 
+            const button = document.querySelector(
+                '[data-detail-button="' + transactionId + '"]'
+            );
 
-        /*
-         * Tutup detail lainnya.
-         */
-        document
-            .querySelectorAll('.payment-detail-row.show')
-            .forEach(function (row) {
+            if (!detailRow || !button) {
+                return;
+            }
 
-                row.classList.remove('show');
+            const wasOpen = detailRow.classList.contains('show');
 
-            });
+            closeAllDetails();
 
+            if (!wasOpen) {
+                detailRow.classList.add('show');
+                button.setAttribute('aria-expanded', 'true');
 
-        /*
-         * Reset semua icon.
-         */
-        document
-            .querySelectorAll('.detail-button i')
-            .forEach(function (icon) {
+                const icon = button.querySelector('i');
 
-                icon.className =
-                    'fa-solid fa-chevron-down';
-
-            });
-
-
-        /*
-         * Buka detail yang dipilih.
-         */
-        if (!isShown) {
-
-            detailRow.classList.add('show');
-
-            const icon =
-                document.getElementById(
-                    'detail-icon-' + transactionId
-                );
-
-            if (icon) {
-
-                icon.className =
-                    'fa-solid fa-chevron-up';
-
+                if (icon) {
+                    icon.className = 'fa-solid fa-chevron-up';
+                }
             }
         }
-    }
+
+        detailButtons.forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.stopPropagation();
+
+                togglePaymentDetail(
+                    button.getAttribute('data-detail-button')
+                );
+            });
+        });
+
+        document.querySelectorAll('.main-row.has-detail').forEach(function (row) {
+            row.addEventListener('click', function () {
+                togglePaymentDetail(
+                    row.getAttribute('data-transaction-id')
+                );
+            });
+        });
+    });
 </script>
 
 @endsection

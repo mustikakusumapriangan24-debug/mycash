@@ -26,6 +26,14 @@ class AuthController extends Controller
             ], 401);
         }
 
+        // Cek status akun
+        if ($user->status !== 'aktif') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun Anda sedang dinonaktifkan.',
+            ], 403);
+        }
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
@@ -34,9 +42,10 @@ class AuthController extends Controller
             'data' => [
                 'user' => $user,
                 'token' => $token,
-            ]
+            ],
         ], 200);
     }
+
 
     // Login untuk Web Browser
     public function webLogin(Request $request)
@@ -46,55 +55,63 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        if (auth()->attempt($credentials)) {
+        $user = User::where('email', $credentials['email'])->first();
 
-            $request->session()->regenerate();
-
-            $user = auth()->user();
-
-            switch ($user->role) {
-
-                case 'super_admin':
-                    $redirect = '/admin';
-                    break;
-
-                case 'bendahara':
-                    $redirect = '/dashboard';
-                    break;
-
-                case 'wali_kelas':
-                    $redirect = '/wali-kelas';
-                    break;
-
-                case 'siswa':
-                    $redirect = '/siswa';
-                    break;
-
-                default:
-
-                    auth()->logout();
-
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Role pengguna tidak dikenali.',
-                    ], 403);
-            }
-
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
             return response()->json([
-                'success' => true,
-                'message' => 'Login Berhasil!',
-                'user' => $user,
-                'redirect' => $redirect,
-            ]);
+                'success' => false,
+                'message' => 'Email atau password salah!',
+            ], 401);
+        }
+
+        // Cek status akun
+        if ($user->status !== 'aktif') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun Anda sedang dinonaktifkan.',
+            ], 403);
+        }
+
+        auth()->login($user);
+
+        $request->session()->regenerate();
+
+        switch ($user->role) {
+            case 'super_admin':
+                $redirect = '/super-admin';
+                break;
+
+            case 'bendahara':
+                $redirect = '/dashboard';
+                break;
+
+            case 'wali_kelas':
+                $redirect = '/wali-kelas';
+                break;
+
+            case 'siswa':
+                $redirect = '/siswa';
+                break;
+
+            default:
+                auth()->logout();
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Role pengguna tidak dikenali.',
+                ], 403);
         }
 
         return response()->json([
-            'success' => false,
-            'message' => 'Email atau password salah!'
-        ], 401);
+            'success' => true,
+            'message' => 'Login Berhasil!',
+            'user' => $user,
+            'redirect' => $redirect,
+        ]);
     }
 
-    // Logout
+
+    // Logout untuk API
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();

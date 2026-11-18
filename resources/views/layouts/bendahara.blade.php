@@ -530,31 +530,6 @@
             </a>
 
 
-            <!-- PEMASUKAN -->
-
-            <a href="#">
-
-                <i class="fa-solid fa-arrow-trend-up"></i>
-
-                <span>
-                    Pemasukan
-                </span>
-
-            </a>
-
-
-            <!-- PENGELUARAN -->
-
-            <a href="#">
-
-                <i class="fa-solid fa-arrow-trend-down"></i>
-
-                <span>
-                    Pengeluaran
-                </span>
-
-            </a>
-
 
             <!-- LAPORAN -->
 
@@ -571,34 +546,6 @@
 
             </a>
 
-
-            <!-- DATA SISWA -->
-
-            <a
-                href="{{ route('students.index') }}"
-                class="{{ request()->routeIs('students.*') ? 'active' : '' }}"
-            >
-
-                <i class="fa-solid fa-users"></i>
-
-                <span>
-                    Data Siswa
-                </span>
-
-            </a>
-
-
-            <!-- PENGATURAN -->
-
-            <a href="#">
-
-                <i class="fa-solid fa-gear"></i>
-
-                <span>
-                    Pengaturan
-                </span>
-
-            </a>
 
 
         </nav>

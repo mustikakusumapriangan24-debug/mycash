@@ -7,23 +7,24 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Tambahkan status pada tabel kelas.
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('role')->default('siswa')->after('password');
-            $table->string('status')->default('aktif')->after('role');
+        Schema::table('kelas', function (Blueprint $table) {
+            $table->string('status')
+                ->default('aktif')
+                ->after('nominal_standar');
         });
     }
 
     /**
-     * Reverse the migrations.
+     * Hapus kolom status jika migration dibatalkan.
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['role', 'status']);
+        Schema::table('kelas', function (Blueprint $table) {
+            $table->dropColumn('status');
         });
     }
 };
