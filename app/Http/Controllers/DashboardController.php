@@ -4,13 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaction;
 use App\Models\Student;
-use App\Models\StudentPayment;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use App\Services\CashPeriodService;
 
 class DashboardController extends Controller
 {
-    private const MONTHLY_FEE = 10000;
+    public function __construct(
+        private readonly CashPeriodService $cashPeriods
+    ) {
+    }
 
     public function index()
     {
@@ -40,6 +43,19 @@ class DashboardController extends Controller
         $totalPemasukan = Transaction::where('type', 'in')->sum('amount');
         $totalPengeluaran = Transaction::where('type', 'out')->sum('amount');
         $totalSaldo = $totalPemasukan - $totalPengeluaran;
+        $cashSetting = $this->cashPeriods->settingForUser($request->user());
+        $paymentYear = (int) $request->input(
+            'payment_year',
+            $this->cashPeriods->currentSchoolYear($cashSetting)
+        );
+
+        if ($paymentYear < 2020 || $paymentYear > 2100) {
+            $paymentYear = $this->cashPeriods->currentSchoolYear($cashSetting);
+        }
+
+        $activeReportTable = $request->input('report_table') === 'payments'
+            ? 'payments'
+            : 'transactions';
 
         $search = $request->input('search');
         $type = $request->input('type');
@@ -69,9 +85,29 @@ class DashboardController extends Controller
 
         $transactions = $query->latest()
             ->paginate(10)
-            ->withQueryString();
+            ->appends(array_merge(
+                $request->query(),
+                ['report_table' => 'transactions']
+            ));
 
         $totalTransaksi = $transactions->total();
+        $paymentStudents = Student::orderBy('name')
+            ->paginate(10, ['*'], 'payment_page')
+            ->appends(array_merge(
+                $request->query(),
+                ['report_table' => 'payments']
+            ));
+        $paymentPeriods = $this->cashPeriods->periods(
+            $cashSetting,
+            $paymentYear
+        );
+        $studentPayments = $this->cashPeriods->buildChecklist(
+            $paymentStudents->getCollection(),
+            $cashSetting,
+            $paymentYear
+        );
+        $periodFee = $this->cashPeriods->fee($cashSetting);
+        $periodType = $this->cashPeriods->periodType($cashSetting);
 
         return view('wali-kelas.pantau-kas', compact(
             'totalPemasukan',
@@ -82,16 +118,27 @@ class DashboardController extends Controller
             'search',
             'type',
             'startDate',
-            'endDate'
+            'endDate',
+            'studentPayments',
+            'paymentStudents',
+            'paymentPeriods',
+            'periodFee',
+            'periodType',
+            'paymentYear',
+            'activeReportTable'
         ));
     }
 
     public function paymentStatus(Request $request)
     {
-        $selectedYear = (int) $request->input('year', now()->year);
+        $cashSetting = $this->cashPeriods->settingForUser($request->user());
+        $selectedYear = (int) $request->input(
+            'year',
+            $this->cashPeriods->currentSchoolYear($cashSetting)
+        );
 
         if ($selectedYear < 2020 || $selectedYear > 2100) {
-            $selectedYear = now()->year;
+            $selectedYear = $this->cashPeriods->currentSchoolYear($cashSetting);
         }
 
         $search = trim($request->input('search', ''));
@@ -107,47 +154,23 @@ class DashboardController extends Controller
 
         $students = $studentQuery->orderBy('name')->paginate(10)->withQueryString();
 
-        $payments = StudentPayment::whereIn('student_id', $students->pluck('id'))
-            ->whereYear('payment_month', $selectedYear)
-            ->get()
-            ->groupBy('student_id');
-
-        $studentPayments = $students->getCollection()->map(
-            function ($student) use ($payments, $selectedYear) {
-                $paymentData = $payments->get($student->id, collect());
-                $months = [];
-
-                for ($i = 1; $i <= 12; $i++) {
-                    $month = Carbon::create($selectedYear, $i, 1);
-
-                    $payment = $paymentData->first(function ($item) use ($month) {
-                        return Carbon::parse($item->payment_month)->format('Y-m')
-                            === $month->format('Y-m');
-                    });
-
-                    $amount = $payment ? (float) $payment->amount : 0;
-
-                    $months[] = [
-                        'month' => $month->format('Y-m-d'),
-                        'label' => $month->translatedFormat('M'),
-                        'amount' => $amount,
-                        'paid' => $amount >= self::MONTHLY_FEE,
-                    ];
-                }
-
-                return [
-                    'student' => $student,
-                    'months' => $months,
-                    'total' => collect($months)->sum('amount'),
-                ];
-            }
+        $paymentPeriods = $this->cashPeriods->periods(
+            $cashSetting,
+            $selectedYear
+        );
+        $studentPayments = $this->cashPeriods->buildChecklist(
+            $students->getCollection(),
+            $cashSetting,
+            $selectedYear
         );
 
         return view('status-pembayaran', [
             'students' => $students,
             'studentPayments' => $studentPayments,
             'selectedYear' => $selectedYear,
-            'monthlyFee' => self::MONTHLY_FEE,
+            'periodFee' => $this->cashPeriods->fee($cashSetting),
+            'periodType' => $this->cashPeriods->periodType($cashSetting),
+            'paymentPeriods' => $paymentPeriods,
             'search' => $search,
         ]);
     }

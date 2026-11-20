@@ -3,10 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\Transaction;
+use App\Services\TransactionAuditLogger;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TransactionController extends Controller
 {
+    public function __construct(
+        private readonly TransactionAuditLogger $auditLogger
+    ) {
+    }
+
     // Menyimpan transaksi baru (Pemasukan / Pengeluaran)
     public function store(Request $request)
     {
@@ -26,15 +33,27 @@ class TransactionController extends Controller
             );
         }
 
-        Transaction::create([
-            'bendahara_id' => $bendahara->id,
-            'type' => $request->type,
-            'amount' => $request->amount,
-            'category' => $request->type === 'out'
-                ? null
-                : $request->category,
-            'description' => $request->description,
-        ]);
+        $actor = $request->user();
+        DB::transaction(function () use ($request, $bendahara, $actor) {
+            $transaction = Transaction::create([
+                'bendahara_id' => $bendahara->id,
+                'type' => $request->type,
+                'amount' => $request->amount,
+                'category' => $request->type === 'out'
+                    ? null
+                    : $request->category,
+                'description' => $request->description,
+            ]);
+
+            $this->auditLogger->record(
+                $actor,
+                $transaction,
+                'tambah',
+                [],
+                $this->auditLogger->snapshot($transaction),
+                'Transaksi kas ditambahkan.'
+            );
+        });
 
         return redirect()->back()->with(
             'success',

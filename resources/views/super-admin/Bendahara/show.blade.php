@@ -162,55 +162,7 @@
 
 <body>
 
-<aside class="sidebar">
-    <div class="brand">
-        <h2>MYCASH</h2>
-        <p>Smart Class Finance</p>
-    </div>
-
-    <div class="menu-label">MENU UTAMA</div>
-
-    <a href="{{ route('super-admin.dashboard') }}" class="nav-link">
-        <i class="fa-solid fa-chart-pie"></i> Dashboard
-    </a>
-
-    <div class="menu-label">PENGELOLAAN SISTEM</div>
-
-    <a href="#" class="nav-link">
-        <i class="fa-solid fa-users"></i> Data Pengguna
-    </a>
-
-    <a href="{{ route('super-admin.kelas.index') }}" class="nav-link">
-        <i class="fa-solid fa-school"></i> Data Kelas
-    </a>
-
-    <a href="{{ route('super-admin.bendahara.index') }}" class="nav-link active">
-        <i class="fa-solid fa-user-tie"></i> Kelola Bendahara
-    </a>
-
-    <a href="#" class="nav-link">
-        <i class="fa-solid fa-chalkboard-user"></i> Kelola Wali Kelas
-    </a>
-
-    <a href="{{ route('super-admin.dashboard') }}#pengawasan" class="nav-link">
-        <i class="fa-solid fa-eye"></i> Pengawasan Kas
-    </a>
-
-    <a href="{{ route('super-admin.dashboard') }}#hak-akses" class="nav-link">
-        <i class="fa-solid fa-shield-halved"></i> Hak Akses
-    </a>
-
-    <div class="sidebar-bottom">
-        <div class="menu-label">AKUN</div>
-        <form action="{{ route('logout') }}" method="POST">
-            @csrf
-            <button type="submit" class="logout-button">
-                <i class="fa-solid fa-right-from-bracket"></i>
-                &nbsp; Keluar
-            </button>
-        </form>
-    </div>
-</aside>
+@include('partials.sidebar-super-admin')
 
 <main class="main">
 

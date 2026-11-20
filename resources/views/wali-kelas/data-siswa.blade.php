@@ -5,20 +5,12 @@
 @php
     $search = request('search');
 
-    $totalStudents = \App\Models\Student::count();
-
-    $totalAccounts = \App\Models\Student::whereHas('user')->count();
-
-    $studentsWithAccount = \App\Models\Student::with('user')
-        ->whereHas('user', function ($query) use ($search) {
-            if ($search) {
-                $query->where('email', 'like', "%{$search}%");
-            }
-        })
+    $students = \App\Models\Student::with('user')
         ->when($search, function ($query) use ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('nis', 'like', "%{$search}%")
+                  ->orWhere('gender', 'like', "%{$search}%")
                   ->orWhereHas('user', function ($userQuery) use ($search) {
                       $userQuery->where('email', 'like', "%{$search}%");
                   });
@@ -27,12 +19,18 @@
         ->orderBy('name', 'asc')
         ->paginate(10)
         ->withQueryString();
+
+    $totalStudents = \App\Models\Student::count();
+
+    $totalAccounts = \App\Models\Student::whereNotNull('user_id')->count();
+
+    $studentsWithoutAccount = $totalStudents - $totalAccounts;
 @endphp
 
 <style>
     .account-page {
-        color: #3d2525;
         font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #3d2525;
     }
 
     .account-header {
@@ -42,6 +40,13 @@
         flex-wrap: wrap;
         gap: 15px;
         margin-bottom: 25px;
+    }
+
+    .account-header-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
     .account-header h2 {
@@ -57,40 +62,29 @@
         margin: 0;
     }
 
-    .account-card {
-        background: #fff;
-        border: 1px solid #eee5dc;
-        border-radius: 16px;
-        padding: 22px;
-        margin-bottom: 22px;
-        box-shadow: 0 5px 20px rgba(77, 7, 16, .04);
-    }
-
-    .account-card h3 {
-        color: #4d0710;
-        font-size: 16px;
-        font-weight: 800;
-        margin: 0 0 18px;
-    }
-
     .account-stats {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 15px;
         margin-bottom: 22px;
     }
 
-    .stat-card {
+    .stat-card,
+    .account-card {
         background: #fff;
         border: 1px solid #eee5dc;
-        border-radius: 14px;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(77, 7, 16, .04);
+    }
+
+    .stat-card {
         padding: 20px;
     }
 
     .stat-card span {
+        display: block;
         color: #927d75;
         font-size: 12px;
-        display: block;
         margin-bottom: 9px;
     }
 
@@ -98,6 +92,18 @@
         color: #4d0710;
         font-size: 25px;
         font-weight: 800;
+    }
+
+    .account-card {
+        padding: 22px;
+        margin-bottom: 22px;
+    }
+
+    .account-card h3 {
+        color: #4d0710;
+        font-size: 16px;
+        font-weight: 800;
+        margin: 0 0 18px;
     }
 
     .account-note {
@@ -108,47 +114,7 @@
         border-radius: 10px;
         font-size: 12px;
         margin-bottom: 20px;
-    }
-
-    .account-form-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 15px;
-    }
-
-    .form-group {
-        margin-bottom: 15px;
-    }
-
-    .form-group label {
-        display: block;
-        color: #5b3535;
-        font-size: 12px;
-        font-weight: 700;
-        margin-bottom: 8px;
-    }
-
-    .form-control {
-        width: 100%;
-        box-sizing: border-box;
-        border: 1px solid #e8ddd5;
-        border-radius: 9px;
-        padding: 11px 13px;
-        font-size: 13px;
-        color: #4d3030;
-        background: #fff;
-        outline: none;
-    }
-
-    .form-control:focus {
-        border-color: #a27d35;
-        box-shadow: 0 0 0 3px rgba(230, 200, 117, .15);
-    }
-
-    .form-hint {
-        color: #9a8982;
-        font-size: 11px;
-        margin-top: 6px;
+        line-height: 1.7;
     }
 
     .account-button {
@@ -157,23 +123,18 @@
         justify-content: center;
         border: none;
         border-radius: 8px;
-        padding: 10px 14px;
+        padding: 9px 12px;
         font-size: 11px;
         font-weight: 700;
         cursor: pointer;
         text-decoration: none;
         transition: .2s;
+        white-space: nowrap;
     }
 
     .account-button:hover {
         opacity: .85;
         transform: translateY(-1px);
-    }
-
-    .account-button:disabled {
-        opacity: .5;
-        cursor: not-allowed;
-        transform: none;
     }
 
     .button-primary {
@@ -191,14 +152,22 @@
         color: #654747;
     }
 
-    /* PENCARIAN */
+    .button-green {
+        background: #e9f1ec;
+        color: #56856c;
+    }
+
+    .button-delete {
+        background: #f8eaea;
+        color: #a13e3e;
+    }
 
     .account-toolbar {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 15px;
         flex-wrap: wrap;
+        gap: 15px;
         margin-bottom: 18px;
     }
 
@@ -216,22 +185,12 @@
         padding: 10px 13px;
         font-size: 12px;
         outline: none;
-        color: #4d3030;
     }
 
-    .account-search input:focus {
+    .account-search input:focus,
+    .form-control:focus {
         border-color: #a27d35;
         box-shadow: 0 0 0 3px rgba(230, 200, 117, .15);
-    }
-
-    .search-button {
-        background: #4d0710;
-        color: white;
-    }
-
-    .reset-button {
-        background: #f4eee8;
-        color: #654747;
     }
 
     .account-table-wrap {
@@ -261,10 +220,6 @@
         border-bottom: 1px solid #f1ebe5;
         font-size: 12px;
         vertical-align: middle;
-    }
-
-    .account-table tr:last-child td {
-        border-bottom: none;
     }
 
     .student-name {
@@ -297,6 +252,11 @@
         color: #a27d35;
     }
 
+    .account-role.no-account {
+        background: #f1f1f1;
+        color: #777;
+    }
+
     .account-status.active {
         background: #e9f1ec;
         color: #56856c;
@@ -309,42 +269,69 @@
 
     .account-actions {
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         gap: 6px;
-        min-width: 220px;
+        min-width: 330px;
+        align-items: center;
     }
 
-    .account-actions .account-button {
+    .account-action-slot {
+        display: flex;
+        flex: 0 0 auto;
+    }
+
+    .account-action-slot form {
+        display: flex;
+        margin: 0;
+    }
+
+    .account-actions .account-button,
+    .account-action-slot .account-button {
+        box-sizing: border-box;
+        width: auto;
         padding: 7px 9px;
         font-size: 10px;
     }
 
-    .account-action-promote,
-    .account-action-activate {
-        background: #e9f1ec;
-        color: #56856c;
+    .form-control {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #e8ddd5;
+        border-radius: 9px;
+        padding: 11px 13px;
+        font-size: 13px;
+        color: #4d3030;
+        background: #fff;
+        outline: none;
     }
 
-    .account-action-demote {
-        background: #f7f1e7;
-        color: #a27d35;
+    .form-group {
+        margin-bottom: 15px;
     }
 
-    .account-action-deactivate {
-        background: #f8eaea;
-        color: #9a4e4e;
-    }
-
-    .edit-account-form {
-        display: none;
-        background: #fcfaf7;
-        padding: 15px;
-        border-radius: 10px;
-        margin-top: 10px;
-    }
-
-    .edit-account-form.show {
+    .form-group label {
         display: block;
+        color: #5b3535;
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .form-hint {
+        color: #9a8982;
+        font-size: 11px;
+        margin-top: 6px;
+    }
+
+    .account-form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 15px;
+    }
+
+    .edit-account-modal .modal-content {
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
     }
 
     .empty-state {
@@ -352,8 +339,6 @@
         color: #9a8982;
         padding: 30px !important;
     }
-
-    /* PAGINATION */
 
     .account-pagination {
         display: flex;
@@ -394,37 +379,32 @@
         font-weight: 700;
     }
 
-    .pagination-links a:hover {
-        background: #faf5e9;
-        border-color: #e6c875;
-    }
-
-    .pagination-links .active span {
+    .pagination-links .active {
         background: #4d0710;
         color: #fff;
         border-color: #4d0710;
     }
 
-    .pagination-links .disabled span {
+    .pagination-links .disabled {
         color: #bdb5ab;
         background: #f8f6f2;
     }
 
-    /* MODAL TAMBAH AKUN */
-
-    .account-modal {
+    .account-modal,
+    .feedback-modal {
         display: none;
         position: fixed;
         inset: 0;
         z-index: 9999;
-        background: rgba(30, 3, 7, .65);
+        background: rgba(30, 3, 7, .68);
         align-items: center;
         justify-content: center;
         padding: 20px;
         overflow-y: auto;
     }
 
-    .account-modal.show {
+    .account-modal.show,
+    .feedback-modal.show {
         display: flex;
     }
 
@@ -434,8 +414,8 @@
         max-width: 600px;
         border-radius: 16px;
         padding: 25px;
-        box-shadow: 0 15px 50px rgba(0, 0, 0, .2);
         margin: auto;
+        box-shadow: 0 15px 50px rgba(0, 0, 0, .2);
     }
 
     .modal-header {
@@ -470,44 +450,15 @@
         margin-top: 15px;
     }
 
-    /* MODAL NOTIFIKASI DAN KONFIRMASI */
-
-    .feedback-modal {
-        display: none;
-        position: fixed;
-        inset: 0;
-        z-index: 10010;
-        background: rgba(30, 3, 7, .68);
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        backdrop-filter: blur(4px);
-    }
-
-    .feedback-modal.show {
-        display: flex;
-    }
-
     .feedback-content {
         background: #fff;
         width: 100%;
-        max-width: 420px;
+        max-width: 440px;
         border-radius: 18px;
         padding: 30px 25px;
         text-align: center;
         box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
-        animation: feedbackAppear .25s ease;
-    }
-
-    @keyframes feedbackAppear {
-        from {
-            opacity: 0;
-            transform: translateY(15px) scale(.97);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-        }
+        margin: auto;
     }
 
     .feedback-icon {
@@ -549,23 +500,13 @@
         font-size: 13px;
         line-height: 1.7;
         margin: 0 0 22px;
-    }
-
-    .feedback-errors {
-        color: #9a4e4e;
-        text-align: left;
-        background: #fdf4f4;
-        border: 1px solid #f0dada;
-        border-radius: 10px;
-        padding: 12px 15px;
-        font-size: 12px;
-        line-height: 1.7;
-        margin: 0 0 20px;
+        white-space: pre-line;
     }
 
     .feedback-actions {
         display: flex;
         justify-content: center;
+        flex-wrap: wrap;
         gap: 10px;
     }
 
@@ -581,14 +522,6 @@
 
         .account-card {
             padding: 16px;
-        }
-
-        .modal-content {
-            padding: 18px;
-        }
-
-        .feedback-content {
-            padding: 25px 18px;
         }
 
         .account-search {
@@ -611,15 +544,31 @@
     {{-- HEADER --}}
     <div class="account-header">
         <div>
-            <h2>Manajemen Akun Siswa</h2>
-            <p>Kelola akun login siswa kelas XII RPL 1.</p>
+            <h2>Data Siswa & Bendahara</h2>
+            <p>Kelola data siswa dan akun login kelas XII RPL 1.</p>
         </div>
 
-        <button type="button"
-            class="account-button button-primary"
-            onclick="openAddAccountModal()">
-            + Tambah Akun
-        </button>
+        <div class="account-header-actions">
+            @if($studentsWithoutAccount > 0)
+                <form method="POST"
+                    action="{{ route('wali-kelas.akun-siswa.buat-semua') }}"
+                    onsubmit="return confirmAction(event, 'Buat Akun Seluruh Siswa?', 'Akun akan dibuat untuk semua siswa yang belum memiliki akun. Email login menggunakan NIS@mycash.com dan password awal menggunakan NIS.')">
+
+                    @csrf
+
+                    <button type="submit"
+                        class="account-button button-gold">
+                        Buat Akun Seluruh Siswa
+                    </button>
+                </form>
+            @endif
+
+            <button type="button"
+                class="account-button button-primary"
+                onclick="openAddAccountModal()">
+                + Tambah Siswa Baru
+            </button>
+        </div>
     </div>
 
     {{-- STATISTIK --}}
@@ -633,19 +582,26 @@
             <span>Sudah Memiliki Akun</span>
             <strong>{{ $totalAccounts }}</strong>
         </div>
+
+        <div class="stat-card">
+            <span>Belum Memiliki Akun</span>
+            <strong>{{ $studentsWithoutAccount }}</strong>
+        </div>
     </div>
 
     <div class="account-note">
-        <strong>Informasi:</strong>
-        Password disimpan dalam bentuk terenkripsi dan tidak ditampilkan pada tabel akun.
+        <strong>Informasi Akun:</strong>
+        Akun siswa menggunakan alias login NIS@mycash.com dan password awal NIS.
+        Akun yang sudah ada tidak diubah.
+        Password disimpan dalam bentuk terenkripsi.
     </div>
 
-    {{-- MODAL TAMBAH AKUN --}}
+    {{-- MODAL TAMBAH SISWA BARU / BUAT AKUN --}}
     <div class="account-modal" id="addAccountModal">
         <div class="modal-content">
 
             <div class="modal-header">
-                <h3>Tambah Akun Siswa</h3>
+                <h3 id="addModalTitle">Tambah Siswa Baru</h3>
 
                 <button type="button"
                     class="modal-close"
@@ -655,58 +611,49 @@
             </div>
 
             <form method="POST"
-                action="{{ route('wali-kelas.akun-siswa.store') }}">
+                action="{{ route('wali-kelas.akun-siswa.store') }}"
+                id="addStudentForm">
 
                 @csrf
 
                 <div class="account-form-grid">
 
                     <div class="form-group">
-                        <label for="name">Nama Lengkap Siswa</label>
+                        <label>Nama Lengkap Siswa</label>
                         <input type="text"
                             name="name"
-                            id="name"
+                            id="newStudentName"
                             class="form-control"
-                            value="{{ old('name') }}"
                             placeholder="Masukkan nama lengkap"
                             required>
                     </div>
 
                     <div class="form-group">
-                        <label for="nis">NIS</label>
+                        <label>NIS</label>
                         <input type="text"
                             name="nis"
-                            id="nis"
+                            id="newStudentNis"
                             class="form-control"
-                            value="{{ old('nis') }}"
-                            placeholder="Masukkan NIS"
+                            placeholder="Masukkan NIS siswa"
                             required>
                     </div>
 
                     <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email"
-                            name="email"
-                            id="email"
+                        <label>Jenis Kelamin</label>
+                        <select name="gender"
+                            id="newStudentGender"
                             class="form-control"
-                            value="{{ old('email') }}"
-                            placeholder="contoh@gmail.com"
                             required>
+                            <option value="">Pilih jenis kelamin</option>
+                            <option value="L">Laki-laki</option>
+                            <option value="P">Perempuan</option>
+                        </select>
                     </div>
 
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password"
-                            name="password"
-                            id="password"
-                            class="form-control"
-                            placeholder="Minimal 6 karakter"
-                            required>
-                        <div class="form-hint">
-                            Password akan dienkripsi sebelum disimpan.
-                        </div>
-                    </div>
+                </div>
 
+                <div class="account-note" id="addModalNote">
+                    Email login dan password awal akun akan otomatis menggunakan NIS siswa.
                 </div>
 
                 <div class="modal-footer">
@@ -717,22 +664,23 @@
                     </button>
 
                     <button type="submit"
-                        class="account-button button-primary">
-                        Simpan Akun
+                        class="account-button button-primary"
+                        id="addSubmitButton">
+                        Simpan Siswa
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    {{-- DAFTAR AKUN --}}
+    {{-- TABEL DATA SISWA --}}
     <div class="account-card">
-        <h3>Daftar Akun Siswa</h3>
 
-        {{-- PENCARIAN --}}
+        <h3>Daftar Data Siswa & Bendahara</h3>
+
         <div class="account-toolbar">
             <div style="color:#8b7772; font-size:12px;">
-                Cari akun berdasarkan nama, NIS, atau email.
+                Menampilkan seluruh siswa, termasuk yang belum memiliki akun.
             </div>
 
             <form method="GET"
@@ -745,13 +693,13 @@
                     placeholder="Cari nama, NIS, atau email...">
 
                 <button type="submit"
-                    class="account-button search-button">
+                    class="account-button button-primary">
                     Cari
                 </button>
 
                 @if($search)
                     <a href="{{ url()->current() }}"
-                        class="account-button reset-button">
+                        class="account-button button-light">
                         Reset
                     </a>
                 @endif
@@ -760,25 +708,29 @@
 
         <div class="account-table-wrap">
             <table class="account-table">
+
                 <thead>
                     <tr>
                         <th>No</th>
-                        <th>Nama Siswa</th>
                         <th>NIS</th>
-                        <th>Email Akun</th>
-                        <th>Password</th>
-                        <th>Role</th>
-                        <th>Status</th>
+                        <th>Nama Lengkap</th>
+                        <th>Gender</th>
+                        <th>Peran</th>
+                        <th>Email Login</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
 
                 <tbody>
-                    @forelse($studentsWithAccount as $student)
+
+                    @forelse($students as $student)
+
                         <tr>
                             <td>
-                                {{ $studentsWithAccount->firstItem() + $loop->index }}
+                                {{ $students->firstItem() + $loop->index }}
                             </td>
+
+                            <td>{{ $student->nis ?? '-' }}</td>
 
                             <td>
                                 <span class="student-name">
@@ -786,20 +738,22 @@
                                 </span>
                             </td>
 
-                            <td>{{ $student->nis ?? '-' }}</td>
-
-                            <td class="student-email">
-                                {{ $student->user->email }}
+                            <td>
+                                @if(in_array(strtolower((string) $student->gender), ['l', 'laki-laki', 'laki laki']))
+                                    Laki-laki
+                                @elseif(in_array(strtolower((string) $student->gender), ['p', 'perempuan']))
+                                    Perempuan
+                                @else
+                                    {{ $student->gender ?? '-' }}
+                                @endif
                             </td>
 
                             <td>
-                                <span style="color:#9a8982;">
-                                    Tersimpan aman
-                                </span>
-                            </td>
-
-                            <td>
-                                @if($student->user->role === 'bendahara')
+                                @if(!$student->user)
+                                    <span class="account-role no-account">
+                                        Belum Ada Akun
+                                    </span>
+                                @elseif($student->user->role === 'bendahara')
                                     <span class="account-role bendahara">
                                         Bendahara
                                     </span>
@@ -810,207 +764,314 @@
                                 @endif
                             </td>
 
-                            <td>
-                                @if($student->user->status === 'aktif')
-                                    <span class="account-status active">
-                                        Aktif
-                                    </span>
-                                @else
-                                    <span class="account-status inactive">
-                                        Nonaktif
-                                    </span>
+                            <td class="student-email">
+                                {{ $student->user?->email ?? '-' }}
+
+                                @if($student->user && $student->user->status === 'nonaktif')
+                                    <div style="margin-top:5px;">
+                                        <span class="account-status inactive">
+                                            Nonaktif
+                                        </span>
+                                    </div>
+                                @elseif($student->user)
+                                    <div style="margin-top:5px;">
+                                        <span class="account-status active">
+                                            Aktif
+                                        </span>
+                                    </div>
                                 @endif
                             </td>
 
                             <td>
                                 <div class="account-actions">
 
-                                    <button type="button"
-                                        class="account-button button-light"
-                                        onclick="toggleEditForm({{ $student->id }})">
-                                        Edit Email
-                                    </button>
+                                    @if(!$student->user)
 
-                                    <form method="POST"
-                                        action="{{ url('/wali-kelas/akun-siswa/'.$student->id.'/reset-password') }}"
-                                        onsubmit="return confirmResetPassword(event, {{ Js::from($student->name) }}, {{ $student->nis ? 'true' : 'false' }})">
-                                        @csrf
-
-                                        <button type="submit"
-                                            class="account-button button-gold"
-                                            {{ empty($student->nis) ? 'disabled' : '' }}>
-                                            Reset Sandi
-                                        </button>
-                                    </form>
-
-                                    @if($student->user->role === 'siswa')
-                                        <form method="POST"
-                                            action="{{ url('/wali-kelas/akun-siswa/'.$student->id.'/promote') }}"
-                                            onsubmit="return showConfirm(event, 'Promosikan Akun?', 'Jadikan {{ addslashes($student->name) }} sebagai Bendahara?')">
-                                            @csrf
-
-                                            <button type="submit"
-                                                class="account-button account-action-promote">
-                                                Jadikan Bendahara
+                                        <div class="account-action-slot">
+                                            <button type="button"
+                                                class="account-button button-light"
+                                                onclick="toggleEditForm({{ $student->id }})">
+                                                Edit Data
                                             </button>
-                                        </form>
-                                    @endif
-
-                                    @if($student->user->role === 'bendahara')
-                                        <form method="POST"
-                                            action="{{ url('/wali-kelas/akun-siswa/'.$student->id.'/demote') }}"
-                                            onsubmit="return showConfirm(event, 'Ubah Role Akun?', 'Kembalikan {{ addslashes($student->name) }} menjadi Siswa?')">
-                                            @csrf
-
-                                            <button type="submit"
-                                                class="account-button account-action-demote">
-                                                Kembalikan ke Siswa
-                                            </button>
-                                        </form>
-                                    @endif
-
-                                    @if($student->user->status === 'aktif')
-                                        <form method="POST"
-                                            action="{{ url('/wali-kelas/akun-siswa/'.$student->id.'/deactivate') }}"
-                                            onsubmit="return showConfirm(event, 'Nonaktifkan Akun?', 'Akun {{ addslashes($student->name) }} tidak akan bisa digunakan untuk login selama dinonaktifkan.')">
-                                            @csrf
-
-                                            <button type="submit"
-                                                class="account-button account-action-deactivate">
-                                                Nonaktifkan
-                                            </button>
-                                        </form>
-                                    @else
-                                        <form method="POST"
-                                            action="{{ url('/wali-kelas/akun-siswa/'.$student->id.'/activate') }}"
-                                            onsubmit="return showConfirm(event, 'Aktifkan Akun?', 'Aktifkan kembali akun {{ addslashes($student->name) }}?')">
-                                            @csrf
-
-                                            <button type="submit"
-                                                class="account-button account-action-activate">
-                                                Aktifkan
-                                            </button>
-                                        </form>
-                                    @endif
-
-                                </div>
-
-                                {{-- EDIT EMAIL --}}
-                                <div class="edit-account-form"
-                                    id="editForm{{ $student->id }}">
-
-                                    <form method="POST"
-                                        action="{{ url('/wali-kelas/akun-siswa/'.$student->id) }}"
-                                        onsubmit="return showConfirm(event, 'Simpan Perubahan?', 'Apakah kamu yakin ingin mengubah email akun ini?')">
-
-                                        @csrf
-                                        @method('PUT')
-
-                                        <div class="form-group">
-                                            <label>Email Baru</label>
-
-                                            <input type="email"
-                                                name="email"
-                                                class="form-control"
-                                                value="{{ $student->user->email }}"
-                                                required>
                                         </div>
 
-                                        <button type="submit"
-                                            class="account-button button-primary">
-                                            Simpan Perubahan
-                                        </button>
+                                        <div class="account-action-slot">
+                                            <button type="button"
+                                                class="account-button button-primary"
+                                                onclick="openExistingStudentAccount(
+                                                    {{ Js::from($student->name) }},
+                                                    {{ Js::from($student->nis) }},
+                                                    {{ Js::from($student->gender) }}
+                                                )">
+                                                Buat Akun
+                                            </button>
+                                        </div>
 
-                                        <button type="button"
-                                            class="account-button button-light"
-                                            onclick="toggleEditForm({{ $student->id }})">
-                                            Batal
-                                        </button>
-                                    </form>
+                                    @else
+
+                                        <div class="account-action-slot">
+                                            <button type="button"
+                                                class="account-button button-light"
+                                                onclick="toggleEditForm({{ $student->id }})">
+                                                Edit Data
+                                            </button>
+                                        </div>
+
+                                        {{-- RESET PASSWORD --}}
+                                        <div class="account-action-slot">
+                                            <form method="POST"
+                                                action="{{ route('wali-kelas.akun-siswa.reset-password', $student->id) }}"
+                                                onsubmit="return confirmAction(event, 'Reset Password?', 'Password {{ $student->name }} akan dikembalikan menggunakan NIS siswa.')">
+
+                                                @csrf
+
+                                                <button type="submit"
+                                                    class="account-button button-gold">
+                                                    Reset Password
+                                                </button>
+                                            </form>
+                                        </div>
+
+                                        {{-- PROMOSI / DEMOSI --}}
+                                        @if($student->user->role === 'siswa')
+
+                                            <div class="account-action-slot">
+                                                <form method="POST"
+                                                    action="{{ route('wali-kelas.akun-siswa.promote', $student->id) }}"
+                                                    onsubmit="return confirmAction(event, 'Tetapkan Bendahara?', 'Apakah Anda yakin ingin menetapkan {{ $student->name }} sebagai Bendahara Kelas?')">
+
+                                                    @csrf
+
+                                                    <button type="submit"
+                                                        class="account-button button-green">
+                                                        Jadikan Bendahara
+                                                    </button>
+                                                </form>
+                                            </div>
+
+                                        @elseif($student->user->role === 'bendahara')
+
+                                            <div class="account-action-slot">
+                                                <form method="POST"
+                                                    action="{{ route('wali-kelas.akun-siswa.demote', $student->id) }}"
+                                                    onsubmit="return confirmAction(event, 'Kembalikan Menjadi Siswa?', 'Apakah Anda yakin ingin mengembalikan {{ $student->name }} menjadi Siswa?')">
+
+                                                    @csrf
+
+                                                    <button type="submit"
+                                                        class="account-button button-gold">
+                                                        Kembalikan ke Siswa
+                                                    </button>
+                                                </form>
+                                            </div>
+
+                                        @endif
+
+                                    @endif
+
+                                    {{-- HAPUS DATA --}}
+                                    <div class="account-action-slot">
+                                        <form method="POST"
+                                            action="{{ route('wali-kelas.akun-siswa.destroy', $student->id) }}"
+                                            onsubmit="return confirmAction(event, 'Hapus Data Siswa?', 'Apakah Anda yakin ingin menghapus data {{ $student->name }}? Penghapusan dibatalkan jika masih ada riwayat pembayaran.')">
+
+                                            @csrf
+                                            @method('DELETE')
+
+                                            <button type="submit"
+                                                class="account-button button-delete">
+                                                Hapus
+                                            </button>
+                                        </form>
+                                    </div>
+
                                 </div>
+
                             </td>
                         </tr>
 
                     @empty
+
                         <tr>
-                            <td colspan="8" class="empty-state">
+                            <td colspan="7" class="empty-state">
                                 @if($search)
-                                    Akun siswa tidak ditemukan. Coba kata pencarian lain.
+                                    Data siswa tidak ditemukan.
                                 @else
-                                    Belum ada akun siswa.
+                                    Belum ada data siswa.
                                 @endif
                             </td>
                         </tr>
+
                     @endforelse
+
                 </tbody>
             </table>
         </div>
 
+        {{-- MODAL EDIT DATA SISWA --}}
+        @foreach($students as $student)
+            <div class="account-modal edit-account-modal"
+                id="editForm{{ $student->id }}">
+                <div class="modal-content">
+
+                    <div class="modal-header">
+                        <h3>Edit Data Siswa</h3>
+
+                        <button type="button"
+                            class="modal-close"
+                            aria-label="Tutup"
+                            onclick="closeEditForm({{ $student->id }})">
+                            &times;
+                        </button>
+                    </div>
+
+                    <form method="POST"
+                        action="{{ route('wali-kelas.akun-siswa.update', $student->id) }}">
+
+                        @csrf
+                        @method('PUT')
+
+                        <div class="form-group">
+                            <label>Nama Lengkap Siswa</label>
+                            <input type="text"
+                                name="name"
+                                class="form-control"
+                                value="{{ $student->name }}"
+                                required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>NIS</label>
+                            <input type="text"
+                                name="nis"
+                                class="form-control"
+                                value="{{ $student->nis }}"
+                                required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Jenis Kelamin</label>
+                            <select name="gender"
+                                class="form-control"
+                                required>
+                                <option value="L"
+                                    {{ in_array(strtolower((string) $student->gender), ['l', 'laki-laki', 'laki laki']) ? 'selected' : '' }}>
+                                    Laki-laki
+                                </option>
+                                <option value="P"
+                                    {{ in_array(strtolower((string) $student->gender), ['p', 'perempuan']) ? 'selected' : '' }}>
+                                    Perempuan
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Email Login</label>
+                            <input type="email"
+                                name="email"
+                                class="form-control"
+                                value="{{ $student->user?->email }}"
+                                {{ $student->user ? '' : 'disabled' }}
+                                placeholder="Email akun siswa">
+                        </div>
+
+                        @if($student->user)
+                            <div class="form-group">
+                                <label>Password Baru (Opsional)</label>
+                                <input type="password"
+                                    name="password"
+                                    class="form-control"
+                                    placeholder="Kosongkan jika tidak ingin mengubah password">
+                            </div>
+                        @endif
+
+                        <div class="modal-footer">
+                            <button type="button"
+                                class="account-button button-light"
+                                onclick="closeEditForm({{ $student->id }})">
+                                Batal
+                            </button>
+
+                            <button type="submit"
+                                class="account-button button-primary">
+                                Simpan Perubahan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endforeach
+
         {{-- PAGINATION --}}
-        @if($studentsWithAccount->total() > 0)
+        @if($students->total() > 0)
+
             <div class="account-pagination">
 
                 <div class="pagination-info">
                     Menampilkan
-                    <strong>{{ $studentsWithAccount->firstItem() }}</strong>
+                    <strong>{{ $students->firstItem() }}</strong>
                     -
-                    <strong>{{ $studentsWithAccount->lastItem() }}</strong>
+                    <strong>{{ $students->lastItem() }}</strong>
                     dari
-                    <strong>{{ $studentsWithAccount->total() }}</strong>
-                    akun
+                    <strong>{{ $students->total() }}</strong>
+                    siswa
                 </div>
 
-                @if($studentsWithAccount->hasPages())
-                    <div class="pagination-links">
-                        @if($studentsWithAccount->onFirstPage())
-                            <span class="disabled">‹</span>
+                <div class="pagination-links">
+
+                    @if($students->onFirstPage())
+                        <span class="disabled">‹</span>
+                    @else
+                        <a href="{{ $students->previousPageUrl() }}">‹</a>
+                    @endif
+
+                    @foreach($students->getUrlRange(1, $students->lastPage()) as $page => $url)
+
+                        @if($page == $students->currentPage())
+                            <span class="active">{{ $page }}</span>
                         @else
-                            <a href="{{ $studentsWithAccount->previousPageUrl() }}">‹</a>
+                            <a href="{{ $url }}">{{ $page }}</a>
                         @endif
 
-                        @foreach($studentsWithAccount->getUrlRange(1, $studentsWithAccount->lastPage()) as $page => $url)
-                            @if($page == $studentsWithAccount->currentPage())
-                                <span class="active"><span>{{ $page }}</span></span>
-                            @else
-                                <a href="{{ $url }}">{{ $page }}</a>
-                            @endif
-                        @endforeach
+                    @endforeach
 
-                        @if($studentsWithAccount->hasMorePages())
-                            <a href="{{ $studentsWithAccount->nextPageUrl() }}">›</a>
-                        @else
-                            <span class="disabled">›</span>
-                        @endif
-                    </div>
-                @endif
+                    @if($students->hasMorePages())
+                        <a href="{{ $students->nextPageUrl() }}">›</a>
+                    @else
+                        <span class="disabled">›</span>
+                    @endif
+
+                </div>
 
             </div>
+
         @endif
+
     </div>
 </div>
+
 
 {{-- MODAL NOTIFIKASI --}}
 <div class="feedback-modal" id="noticeModal">
     <div class="feedback-content">
 
-        <div class="feedback-icon" id="noticeIcon">✓</div>
+        <div class="feedback-icon" id="noticeIcon">!</div>
 
-        <h3 id="noticeTitle">Berhasil</h3>
+        <h3 id="noticeTitle">Informasi</h3>
 
         <p id="noticeMessage"></p>
-
-        <div class="feedback-errors" id="noticeErrors" style="display:none;"></div>
 
         <div class="feedback-actions">
             <button type="button"
                 class="account-button button-primary"
                 onclick="closeNoticeModal()">
-                Mengerti
+                Tutup
             </button>
         </div>
 
     </div>
 </div>
+
 
 {{-- MODAL KONFIRMASI --}}
 <div class="feedback-modal" id="confirmModal">
@@ -1018,11 +1079,12 @@
 
         <div class="feedback-icon warning">!</div>
 
-        <h3 id="confirmTitle">Konfirmasi Tindakan</h3>
+        <h3 id="confirmTitle">Konfirmasi</h3>
 
         <p id="confirmMessage"></p>
 
         <div class="feedback-actions">
+
             <button type="button"
                 class="account-button button-light"
                 onclick="closeConfirmModal()">
@@ -1031,19 +1093,78 @@
 
             <button type="button"
                 class="account-button button-primary"
-                id="confirmSubmitButton"
                 onclick="submitConfirmedForm()">
                 Ya, Lanjutkan
+            </button>
+
+        </div>
+
+    </div>
+</div>
+
+
+{{-- MODAL DATA TIDAK DAPAT DIHAPUS --}}
+<div class="feedback-modal" id="deleteBlockedModal">
+    <div class="feedback-content">
+
+        <div class="feedback-icon error">!</div>
+
+        <h3>Tidak Dapat Dihapus</h3>
+
+        <p id="deleteBlockedMessage"></p>
+
+        <div class="feedback-actions">
+            <button type="button"
+                class="account-button button-primary"
+                onclick="closeDeleteBlockedModal()">
+                Tutup
             </button>
         </div>
 
     </div>
 </div>
 
+
 <script>
-    // MODAL TAMBAH AKUN
+    // MODAL TAMBAH SISWA BARU
 
     function openAddAccountModal() {
+        const form = document.getElementById('addStudentForm');
+
+        form.reset();
+
+        document.getElementById('addModalTitle').textContent =
+            'Tambah Siswa Baru';
+
+        document.getElementById('addSubmitButton').textContent =
+            'Simpan Siswa';
+
+        document.getElementById('addModalNote').textContent =
+            'Email login dibuat dari NIS dengan format NIS@mycash.com. Password awal menggunakan NIS siswa.';
+
+        document.getElementById('addAccountModal').classList.add('show');
+    }
+
+    // MODAL BUAT AKUN UNTUK SISWA YANG SUDAH ADA
+
+    function openExistingStudentAccount(name, nis, gender) {
+        const form = document.getElementById('addStudentForm');
+
+        form.reset();
+
+        document.getElementById('newStudentName').value = name ?? '';
+        document.getElementById('newStudentNis').value = nis ?? '';
+        document.getElementById('newStudentGender').value = gender ?? '';
+
+        document.getElementById('addModalTitle').textContent =
+            'Buat Akun Siswa';
+
+        document.getElementById('addSubmitButton').textContent =
+            'Buat Akun';
+
+        document.getElementById('addModalNote').textContent =
+            'Data siswa yang sudah ada akan digunakan. Email login dan password awal dibuat menggunakan NIS siswa.';
+
         document.getElementById('addAccountModal').classList.add('show');
     }
 
@@ -1058,37 +1179,44 @@
     });
 
 
+    // EDIT DATA
+
+    function toggleEditForm(studentId) {
+        const modal = document.getElementById('editForm' + studentId);
+
+        if (modal) {
+            modal.classList.add('show');
+        }
+    }
+
+    function closeEditForm(studentId) {
+        const modal = document.getElementById('editForm' + studentId);
+
+        if (modal) {
+            modal.classList.remove('show');
+        }
+    }
+
+    document.querySelectorAll('.edit-account-modal').forEach(function(modal) {
+        modal.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                modal.classList.remove('show');
+            }
+        });
+    });
+
+
     // MODAL NOTIFIKASI
 
-    function showNotice(type, title, message, errors = []) {
+    function showNotice(type, title, message) {
         const modal = document.getElementById('noticeModal');
         const icon = document.getElementById('noticeIcon');
-        const errorBox = document.getElementById('noticeErrors');
 
         icon.className = 'feedback-icon ' + type;
-
-        if (type === 'success') {
-            icon.textContent = '✓';
-        } else {
-            icon.textContent = '!';
-        }
+        icon.textContent = type === 'success' ? '✓' : '!';
 
         document.getElementById('noticeTitle').textContent = title;
         document.getElementById('noticeMessage').textContent = message;
-
-        if (errors.length > 0) {
-            errorBox.style.display = 'block';
-            errorBox.innerHTML = '';
-
-            errors.forEach(function(error) {
-                const item = document.createElement('div');
-                item.textContent = '• ' + error;
-                errorBox.appendChild(item);
-            });
-        } else {
-            errorBox.style.display = 'none';
-            errorBox.innerHTML = '';
-        }
 
         modal.classList.add('show');
     }
@@ -1102,7 +1230,7 @@
 
     let pendingForm = null;
 
-    function showConfirm(event, title, message) {
+    function confirmAction(event, title, message) {
         event.preventDefault();
 
         pendingForm = event.currentTarget;
@@ -1121,63 +1249,35 @@
     }
 
     function submitConfirmedForm() {
-        if (pendingForm) {
-            const form = pendingForm;
-            pendingForm = null;
-
-            document.getElementById('confirmModal').classList.remove('show');
-
-            form.submit();
+        if (!pendingForm) {
+            return;
         }
+
+        const form = pendingForm;
+        pendingForm = null;
+
+        document.getElementById('confirmModal').classList.remove('show');
+
+        form.submit();
     }
 
 
-    // KONFIRMASI RESET PASSWORD
+    // MODAL PENGHAPUSAN DITOLAK
 
-    function confirmResetPassword(event, name, hasNis) {
-        event.preventDefault();
-
-        if (!hasNis) {
-            showNotice(
-                'error',
-                'Reset Tidak Dapat Dilakukan',
-                'Siswa ini belum memiliki NIS. Password tidak dapat di-reset.'
-            );
-
-            return false;
-        }
-
-        return showConfirm(
-            event,
-            'Reset Password?',
-            'Password akun ' + name + ' akan dikembalikan menggunakan NIS siswa. Lanjutkan?'
-        );
-    }
-
-
-    // EDIT EMAIL
-
-    function toggleEditForm(studentId) {
-        const form = document.getElementById('editForm' + studentId);
-
-        if (form) {
-            form.classList.toggle('show');
-        }
+    function closeDeleteBlockedModal() {
+        document.getElementById('deleteBlockedModal').classList.remove('show');
     }
 
 
     // TUTUP MODAL DENGAN KLIK AREA LUAR
 
-    document.getElementById('noticeModal').addEventListener('click', function(event) {
-        if (event.target === this) {
-            closeNoticeModal();
-        }
-    });
-
-    document.getElementById('confirmModal').addEventListener('click', function(event) {
-        if (event.target === this) {
-            closeConfirmModal();
-        }
+    document.querySelectorAll('.feedback-modal').forEach(function(modal) {
+        modal.addEventListener('click', function(event) {
+            if (event.target === this) {
+                this.classList.remove('show');
+                pendingForm = null;
+            }
+        });
     });
 
 
@@ -1188,6 +1288,7 @@
             closeAddAccountModal();
             closeNoticeModal();
             closeConfirmModal();
+            closeDeleteBlockedModal();
         }
     });
 
@@ -1200,7 +1301,7 @@
             'Berhasil!',
             {{ Js::from(session('success')) }}
         );
-    @elseif(session('error'))
+    @elseif(session('error') && !session('delete_blocked'))
         showNotice(
             'error',
             'Terjadi Kesalahan',
@@ -1210,10 +1311,24 @@
         showNotice(
             'error',
             'Data Belum Sesuai',
-            'Periksa kembali data yang kamu masukkan.',
-            {{ Js::from($errors->all()) }}
+            {{ Js::from($errors->first()) }}
         );
     @endif
+
+
+    // MODAL JIKA DATA MASIH MEMILIKI RIWAYAT PEMBAYARAN
+
+    @if(session('delete_blocked'))
+        document.getElementById('deleteBlockedMessage').textContent =
+            {{ Js::from(
+                'Data siswa ' . session('delete_blocked.name') .
+                ' masih memiliki ' . session('delete_blocked.count') .
+                ' riwayat pembayaran. Data tidak dapat dihapus untuk menjaga riwayat pembukuan kas.'
+            ) }};
+
+        document.getElementById('deleteBlockedModal').classList.add('show');
+    @endif
+
 </script>
 
 @endsection

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ubah Data Kelas - MyCash</title>
+    <title>Edit Kelola Kelas - MyCash</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -182,7 +182,7 @@
         <div class="container">
 
             <div class="header">
-                <h2>Ubah Data Kelas</h2>
+                <h2>Edit Kelas</h2>
                 <p>Perbarui informasi rombel dan aturan kas</p>
             </div>
 

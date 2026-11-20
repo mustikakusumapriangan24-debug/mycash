@@ -502,7 +502,7 @@
 
             <a
                 href="{{ route('transactions.index') }}"
-                class="{{ request()->routeIs('transactions.*') ? 'active' : '' }}"
+                class="{{ request()->routeIs('transactions.index') ? 'active' : '' }}"
             >
 
                 <i class="fa-solid fa-money-bill-transfer"></i>
@@ -513,22 +513,13 @@
 
             </a>
 
-
-            <!-- STATUS PEMBAYARAN -->
-
             <a
-                href="{{ route('status-pembayaran') }}"
-                class="{{ request()->routeIs('status-pembayaran') ? 'active' : '' }}"
+                href="{{ route('transactions.audit') }}"
+                class="{{ request()->routeIs('transactions.audit') ? 'active' : '' }}"
             >
-
-                <i class="fa-solid fa-circle-check"></i>
-
-                <span>
-                    Status Pembayaran Kas
-                </span>
-
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>Riwayat Log</span>
             </a>
-
 
 
             <!-- LAPORAN -->
@@ -542,6 +533,19 @@
 
                 <span>
                     Laporan
+                </span>
+
+            </a>
+
+            <a
+                href="{{ route('pengumuman.index') }}"
+                class="{{ request()->routeIs('pengumuman.*') ? 'active' : '' }}"
+            >
+
+                <i class="fa-regular fa-bell"></i>
+
+                <span>
+                    Notifikasi
                 </span>
 
             </a>

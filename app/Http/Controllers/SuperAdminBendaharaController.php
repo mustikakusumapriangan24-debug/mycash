@@ -10,14 +10,40 @@ use Illuminate\Validation\Rule;
 
 class SuperAdminBendaharaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $bendahara = Bendahara::with(['user', 'kelas'])
+        $search = trim((string) $request->query('search', ''));
+        $query = Bendahara::with(['user', 'kelas.waliKelas'])
             ->withCount('transactions')
-            ->orderBy('nama', 'asc')
-            ->get();
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($bendaharaQuery) use ($search) {
+                    $bendaharaQuery->where('nama', 'like', "%{$search}%")
+                        ->orWhere('nis', 'like', "%{$search}%")
+                        ->orWhere('no_hp', 'like', "%{$search}%")
+                        ->orWhereHas('user', function ($userQuery) use ($search) {
+                            $userQuery->where('email', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('kelas', function ($kelasQuery) use ($search) {
+                            $kelasQuery->where('nama_kelas', 'like', "%{$search}%")
+                                ->orWhere('kode_kelas', 'like', "%{$search}%")
+                                ->orWhereHas('waliKelas', function ($waliQuery) use ($search) {
+                                    $waliQuery->where('nama', 'like', "%{$search}%");
+                                });
+                        });
+                });
+            });
 
-        return view('super-admin.bendahara.index', compact('bendahara'));
+        $bendahara = $query
+            ->orderBy('nama', 'asc')
+            ->paginate(10)
+            ->withQueryString();
+        $totalBendahara = Bendahara::count();
+
+        return view('super-admin.bendahara.index', compact(
+            'bendahara',
+            'totalBendahara',
+            'search'
+        ));
     }
 
     public function show($id)

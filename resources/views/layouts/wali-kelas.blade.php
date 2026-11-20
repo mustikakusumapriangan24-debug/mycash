@@ -304,9 +304,15 @@
             </a>
 
             <a href="{{ route('wali-kelas.kas') }}"
-               class="{{ request()->routeIs('wali-kelas.kas') ? 'active' : '' }}">
+               class="{{ request()->routeIs('wali-kelas.kas', 'status-pembayaran') ? 'active' : '' }}">
                 <i class="fa-solid fa-file-lines"></i>
                 <span>Laporan</span>
+            </a>
+
+            <a href="{{ route('transactions.audit') }}"
+               class="{{ request()->routeIs('transactions.audit') ? 'active' : '' }}">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>Riwayat Log</span>
             </a>
 
         </nav>

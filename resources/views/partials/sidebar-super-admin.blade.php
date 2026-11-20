@@ -176,13 +176,176 @@
         color: #e6c875;
     }
 
+    :root {
+        --maroon: #803E2F;
+        --dark-maroon: #54251F;
+        --gold: #B59A63;
+        --background: #F7F4EF;
+        --white: #FFFEFC;
+        --text: #3E3D38;
+        --muted: #756E69;
+        --border: #DED6CC;
+    }
+
+    body {
+        margin-left: 0 !important;
+        background: #F7F4EF !important;
+        color: #3E3D38 !important;
+        font-family: "Plus Jakarta Sans", sans-serif !important;
+    }
+
+    .main {
+        margin-left: 220px !important;
+        padding: 32px !important;
+        min-height: 100vh;
+    }
+
+    body.super-admin-create {
+        padding: 32px 32px 32px 252px !important;
+    }
+
+    .super-admin-create .container {
+        max-width: 950px;
+        margin: 0 auto;
+    }
+
+    .sidebar {
+        width: 220px;
+        min-width: 220px;
+        z-index: 1000;
+        background: linear-gradient(180deg, #803E2F 0%, #54251F 100%);
+        padding: 28px 16px;
+    }
+
+    .sidebar .brand {
+        padding: 0 8px 20px;
+        margin-bottom: 18px;
+        text-align: center;
+    }
+
+    .sidebar .brand h2 {
+        color: #F1ECE4;
+        font-family: "Playfair Display", Georgia, serif;
+        font-size: 22px;
+        letter-spacing: 2px;
+    }
+
+    .sidebar .brand p {
+        color: #D8D0C5;
+        font-size: 9px;
+    }
+
+    .sidebar .menu-label {
+        color: #D8D0C5;
+        margin: 18px 10px 10px;
+        letter-spacing: 1px;
+    }
+
+    .sidebar .nav-link {
+        min-height: 43px;
+        padding: 12px 13px;
+        color: #F1ECE4;
+    }
+
+    .sidebar .nav-link.active,
+    .sidebar .nav-link:hover {
+        background: linear-gradient(135deg, #D8C7A8, #B59A63);
+        color: #3E3D38;
+        box-shadow: 0 8px 20px rgba(181,154,99,.18);
+    }
+
+    .sidebar .profile-link.active,
+    .sidebar .profile-link:hover {
+        background: rgba(255,255,255,.08);
+    }
+
+    .sidebar .profile-role,
+    .sidebar .profile-arrow {
+        color: #D8D0C5;
+    }
+
+    .sidebar .logout-button {
+        background: rgba(255,255,255,.08);
+        color: #F1ECE4;
+    }
+
+    .topbar h1,
+    .page-header h1,
+    .header h2,
+    .panel h2,
+    .panel-header h2,
+    .section-heading h2,
+    .container > h1 {
+        color: #803E2F !important;
+    }
+
+    .eyebrow,
+    .page-header .eyebrow {
+        color: #B59A63 !important;
+    }
+
+    .panel,
+    .card,
+    .stat-card,
+    .profile-card {
+        border-color: #DED6CC !important;
+        border-radius: 15px;
+        box-shadow: 0 5px 20px rgba(84,37,31,.05);
+    }
+
+    .welcome,
+    .profile-banner {
+        background: linear-gradient(115deg, #803E2F, #54251F) !important;
+    }
+
+    .welcome-label {
+        border-color: rgba(216,208,197,.45) !important;
+        color: #D8D0C5 !important;
+    }
+
+    th {
+        background: #F1ECE4 !important;
+        color: #756E69 !important;
+    }
+
+    .btn-add,
+    .btn-save,
+    .btn-submit,
+    .modal-button,
+    .button-primary {
+        background: #803E2F !important;
+        color: #FFFEFC !important;
+    }
+
+    .btn-add:hover,
+    .btn-save:hover,
+    .btn-submit:hover,
+    .modal-button:hover,
+    .button-primary:hover {
+        background: #54251F !important;
+        color: #F1ECE4 !important;
+    }
+
     @media (max-width: 700px) {
+        body {
+            padding: 0 !important;
+        }
+
         .sidebar {
             position: relative;
             width: 100%;
             min-width: 100%;
             height: auto;
             min-height: auto;
+        }
+
+        .main {
+            margin-left: 0 !important;
+            padding: 20px 15px !important;
+        }
+
+        body.super-admin-create {
+            padding: 20px 15px !important;
         }
     }
 </style>
@@ -206,7 +369,7 @@
     <a href="{{ route('super-admin.kelas.index') }}"
        class="nav-link {{ request()->routeIs('super-admin.kelas.*') ? 'active' : '' }}">
         <i class="fa-solid fa-school"></i>
-        Data Kelas
+        Kelola Kelas
     </a>
 
     <a href="{{ route('super-admin.bendahara.index') }}"

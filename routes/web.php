@@ -12,6 +12,9 @@ use App\Http\Controllers\SuperAdminKelasController;
 use App\Http\Controllers\SuperAdminBendaharaController;
 use App\Http\Controllers\WaliKelasProfileController;
 use App\Http\Controllers\SuperAdminProfileController;
+use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\CashSettingController;
+use App\Http\Controllers\TransactionAuditController;
 
 use App\Models\User;
 use App\Models\Transaction;
@@ -45,9 +48,7 @@ Route::post(
 
 Route::middleware('auth')->group(function () {
 
-    // =================================================
     // LOGOUT
-    // =================================================
 
     Route::post('/logout', function () {
         auth()->logout();
@@ -65,15 +66,11 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:super_admin')->group(function () {
 
-        // DASHBOARD SUPER ADMIN
-
         Route::get('/super-admin', function () {
 
-            $totalKelas = Kelas::where('status', 'aktif')
-                ->count();
+            $totalKelas = Kelas::where('status', 'aktif')->count();
 
-            $totalSiswa = DB::table('students')
-                ->count();
+            $totalSiswa = DB::table('students')->count();
 
             $totalBendahara = User::where('role', 'bendahara')
                 ->where('status', 'aktif')
@@ -107,9 +104,7 @@ Route::middleware('auth')->group(function () {
         })->name('super-admin.dashboard');
 
 
-        // =================================================
         // PROFIL SUPER ADMIN
-        // =================================================
 
         Route::get(
             '/super-admin/profil',
@@ -127,9 +122,7 @@ Route::middleware('auth')->group(function () {
         )->name('super-admin.profile.password');
 
 
-        // =================================================
         // DATA KELAS
-        // =================================================
 
         Route::get(
             '/super-admin/kelas',
@@ -152,6 +145,19 @@ Route::middleware('auth')->group(function () {
         )->whereNumber('id')
             ->name('super-admin.kelas.show');
 
+        Route::post(
+            '/super-admin/kelas/{id}/siswa',
+            [SuperAdminKelasController::class, 'assignStudent']
+        )->whereNumber('id')
+            ->name('super-admin.kelas.students.store');
+
+        Route::delete(
+            '/super-admin/kelas/{id}/siswa/{studentId}',
+            [SuperAdminKelasController::class, 'removeStudent']
+        )->whereNumber('id')
+            ->whereNumber('studentId')
+            ->name('super-admin.kelas.students.destroy');
+
         Route::get(
             '/super-admin/kelas/{id}/edit',
             [SuperAdminKelasController::class, 'edit']
@@ -171,16 +177,12 @@ Route::middleware('auth')->group(function () {
             ->name('super-admin.kelas.destroy');
 
 
-        // =================================================
         // KELOLA BENDAHARA
-        // =================================================
 
         Route::get(
             '/super-admin/bendahara',
             [SuperAdminBendaharaController::class, 'index']
         )->name('super-admin.bendahara.index');
-
-        // EDIT BENDAHARA
 
         Route::get(
             '/super-admin/bendahara/{id}/edit',
@@ -188,15 +190,11 @@ Route::middleware('auth')->group(function () {
         )->whereNumber('id')
             ->name('super-admin.bendahara.edit');
 
-        // UPDATE DATA BENDAHARA
-
         Route::put(
             '/super-admin/bendahara/{id}',
             [SuperAdminBendaharaController::class, 'update']
         )->whereNumber('id')
             ->name('super-admin.bendahara.update');
-
-        // AKTIF / NONAKTIFKAN AKUN BENDAHARA
 
         Route::patch(
             '/super-admin/bendahara/{id}/status',
@@ -204,15 +202,11 @@ Route::middleware('auth')->group(function () {
         )->whereNumber('id')
             ->name('super-admin.bendahara.toggle-status');
 
-        // HAPUS BENDAHARA
-
         Route::delete(
             '/super-admin/bendahara/{id}',
             [SuperAdminBendaharaController::class, 'destroy']
         )->whereNumber('id')
             ->name('super-admin.bendahara.destroy');
-
-        // DETAIL BENDAHARA
 
         Route::get(
             '/super-admin/bendahara/{id}',
@@ -228,6 +222,16 @@ Route::middleware('auth')->group(function () {
     // =====================================================
 
     Route::middleware('role:bendahara')->group(function () {
+
+        Route::put(
+            '/pengaturan-kas',
+            [CashSettingController::class, 'updateForBendahara']
+        )->name('cash-settings.bendahara.update');
+
+        Route::post(
+            '/pengaturan-kas/reset',
+            [CashSettingController::class, 'resetForBendahara']
+        )->name('cash-settings.bendahara.reset');
 
         Route::get(
             '/dashboard',
@@ -260,6 +264,16 @@ Route::middleware('auth')->group(function () {
         )->name('transactions.general.store');
 
         Route::get(
+            '/pengumuman',
+            [AnnouncementController::class, 'index']
+        )->name('pengumuman.index');
+
+        Route::post(
+            '/pengumuman',
+            [AnnouncementController::class, 'store']
+        )->name('pengumuman.store');
+
+        Route::get(
             '/laporan',
             [ReportController::class, 'index']
         )->name('laporan.index');
@@ -284,6 +298,11 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:bendahara|wali_kelas')->group(function () {
 
         Route::get(
+            '/transactions/audit',
+            [TransactionAuditController::class, 'index']
+        )->name('transactions.audit');
+
+        Route::get(
             '/status-pembayaran',
             [DashboardController::class, 'paymentStatus']
         )->name('status-pembayaran');
@@ -302,12 +321,12 @@ Route::middleware('auth')->group(function () {
 
     Route::middleware('role:wali_kelas')->group(function () {
 
-        Route::get(
-            '/wali-kelas',
-            function () {
-                return view('wali-kelas');
-            }
-        )->name('wali-kelas.dashboard');
+        Route::get('/wali-kelas', function () {
+            return view('wali-kelas');
+        })->name('wali-kelas.dashboard');
+
+
+        // PROFIL
 
         Route::get(
             '/wali-kelas/profil',
@@ -318,6 +337,9 @@ Route::middleware('auth')->group(function () {
             '/wali-kelas/profil',
             [WaliKelasProfileController::class, 'update']
         )->name('wali-kelas.profile.update');
+
+
+        // DATA SISWA
 
         Route::get(
             '/wali-kelas/data-siswa',
@@ -339,53 +361,99 @@ Route::middleware('auth')->group(function () {
             [StudentController::class, 'destroy']
         )->name('students.destroy');
 
+
+        // PANTAU KAS
+
         Route::get(
             '/wali-kelas/pantau-kas',
             [DashboardController::class, 'waliKelasKas']
         )->name('wali-kelas.kas');
 
 
+        // =================================================
         // MANAJEMEN AKUN SISWA
+        // =================================================
 
         Route::get(
             '/wali-kelas/akun-siswa',
             [StudentAccountController::class, 'index']
         )->name('wali-kelas.akun-siswa');
 
+
+        // TAMBAH AKUN SATU PER SATU
+
         Route::post(
             '/wali-kelas/akun-siswa',
             [StudentAccountController::class, 'store']
         )->name('wali-kelas.akun-siswa.store');
 
+        Route::post(
+            '/wali-kelas/akun-siswa/buat-semua',
+            [StudentAccountController::class, 'createAllMissingAccounts']
+        )->name('wali-kelas.akun-siswa.buat-semua');
+
+
+        // EDIT DATA SISWA DAN AKUN
+
         Route::put(
             '/wali-kelas/akun-siswa/{studentId}',
             [StudentAccountController::class, 'update']
-        )->name('wali-kelas.akun-siswa.update');
+        )->whereNumber('studentId')
+            ->name('wali-kelas.akun-siswa.update');
+
+
+        // RESET PASSWORD
 
         Route::post(
             '/wali-kelas/akun-siswa/{studentId}/reset-password',
             [StudentAccountController::class, 'resetPassword']
-        )->name('wali-kelas.akun-siswa.reset-password');
+        )->whereNumber('studentId')
+            ->name('wali-kelas.akun-siswa.reset-password');
+
+
+        // PROMOSI MENJADI BENDAHARA
 
         Route::post(
             '/wali-kelas/akun-siswa/{studentId}/promote',
             [StudentAccountController::class, 'promoteToBendahara']
-        )->name('wali-kelas.akun-siswa.promote');
+        )->whereNumber('studentId')
+            ->name('wali-kelas.akun-siswa.promote');
+
+
+        // KEMBALIKAN MENJADI SISWA
 
         Route::post(
             '/wali-kelas/akun-siswa/{studentId}/demote',
             [StudentAccountController::class, 'demoteToSiswa']
-        )->name('wali-kelas.akun-siswa.demote');
+        )->whereNumber('studentId')
+            ->name('wali-kelas.akun-siswa.demote');
+
+
+        // NONAKTIFKAN AKUN
 
         Route::post(
             '/wali-kelas/akun-siswa/{studentId}/deactivate',
             [StudentAccountController::class, 'deactivateAccount']
-        )->name('wali-kelas.akun-siswa.deactivate');
+        )->whereNumber('studentId')
+            ->name('wali-kelas.akun-siswa.deactivate');
+
+
+        // AKTIFKAN AKUN
 
         Route::post(
             '/wali-kelas/akun-siswa/{studentId}/activate',
             [StudentAccountController::class, 'activateAccount']
-        )->name('wali-kelas.akun-siswa.activate');
+        )->whereNumber('studentId')
+            ->name('wali-kelas.akun-siswa.activate');
+
+
+        // HAPUS DATA SISWA
+
+        Route::delete(
+            '/wali-kelas/akun-siswa/{studentId}',
+            [StudentAccountController::class, 'destroy']
+        )->whereNumber('studentId')
+            ->name('wali-kelas.akun-siswa.destroy');
 
     });
 
@@ -405,6 +473,11 @@ Route::middleware('auth')->group(function () {
             '/siswa/notifikasi/{id}/baca',
             [SiswaDashboardController::class, 'markNotificationAsRead']
         )->name('siswa.notification.read');
+
+        Route::post(
+            '/siswa/pengumuman/{id}/baca',
+            [SiswaDashboardController::class, 'markAnnouncementAsRead']
+        )->name('siswa.announcement.read');
 
     });
 

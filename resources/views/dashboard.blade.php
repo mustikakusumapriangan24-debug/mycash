@@ -89,6 +89,14 @@
         align-items: center;
         justify-content: center;
         color: var(--maroon);
+        text-decoration: none;
+        cursor: pointer;
+        transition: .2s ease;
+    }
+
+    .notification:hover {
+        border-color: var(--gold);
+        transform: translateY(-1px);
     }
 
     /* =========================
@@ -395,11 +403,14 @@
             </div>
 
 
-            <div class="notification">
-
+            <a
+                href="{{ route('pengumuman.index') }}"
+                class="notification"
+                aria-label="Pengumuman dan notifikasi"
+                title="Pengumuman dan notifikasi"
+            >
                 <i class="fa-regular fa-bell"></i>
-
-            </div>
+            </a>
 
         </div>
 

@@ -271,11 +271,12 @@
     </style>
 </head>
 
-<body>
+<body class="super-admin-create">
+@include('partials.sidebar-super-admin')
 <div class="container">
 
     <a href="{{ route('super-admin.kelas.index') }}" class="back">
-        ← Kembali ke Data Kelas
+        ← Kembali ke Kelola Kelas
     </a>
 
     <div class="eyebrow">ADMINISTRATOR</div>

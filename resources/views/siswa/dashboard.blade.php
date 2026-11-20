@@ -998,6 +998,28 @@
 
         }
 
+        .notification-priority {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 6px;
+            padding: 2px 6px;
+            border-radius: 6px;
+            background: #edf4ef;
+            color: #56856c;
+            font-size: 7px;
+            vertical-align: middle;
+        }
+
+        .notification-priority.important {
+            background: #fff3d6;
+            color: #986a12;
+        }
+
+        .notification-priority.urgent {
+            background: #fae9e7;
+            color: #a65353;
+        }
+
 
         .notification-text {
 
@@ -1169,6 +1191,7 @@
 
             <a
                 href="{{ route('siswa.dashboard') }}"
+                id="studentDashboardMenu"
                 class="{{ request()->routeIs('siswa.dashboard') ? 'active' : '' }}"
             >
 
@@ -1210,7 +1233,8 @@
             <!-- NOTIFIKASI -->
 
             <a
-                href="#notifikasi"
+                href="{{ route('siswa.dashboard') }}#notifikasi"
+                id="studentNotificationMenu"
                 class="notification-menu"
             >
 
@@ -1221,16 +1245,10 @@
                 </span>
 
 
-                @if($unreadNotifications > 0)
+                @if($unreadAnnouncements > 0)
 
                     <span class="notification-badge">
-                        {{ $unreadNotifications }}
-                    </span>
-
-                @else
-
-                    <span class="notification-badge empty">
-                        0
+                        {{ $unreadAnnouncements }}
                     </span>
 
                 @endif
@@ -1590,10 +1608,9 @@
                             <!-- NOTIFIKASI BELUM DIBACA -->
 
                             <form
-                                action="{{ route(
-                                    'siswa.notification.read',
-                                    $notification->id
-                                ) }}"
+                                action="{{ $notification->is_announcement
+                                    ? route('siswa.announcement.read', $notification->id)
+                                    : route('siswa.notification.read', $notification->id) }}"
                                 method="POST"
                                 style="margin: 0;"
                             >
@@ -1614,7 +1631,11 @@
 
                                     <div class="notification-icon">
 
-                                        @if($notification->type === 'pembayaran_berhasil')
+                                        @if($notification->type === 'pengumuman')
+
+                                            <i class="fa-solid fa-bullhorn"></i>
+
+                                        @elseif($notification->type === 'pembayaran_berhasil')
 
                                             <i class="fa-solid fa-circle-check"></i>
 
@@ -1644,6 +1665,11 @@
                                         <div class="notification-title">
 
                                             {{ $notification->title }}
+                                            @if($notification->is_announcement)
+                                                <span class="notification-priority {{ $notification->priority }}">
+                                                    {{ $notification->priority_label }}
+                                                </span>
+                                            @endif
 
                                         </div>
 
@@ -1684,7 +1710,11 @@
 
                                 <div class="notification-icon">
 
-                                    @if($notification->type === 'pembayaran_berhasil')
+                                    @if($notification->type === 'pengumuman')
+
+                                        <i class="fa-solid fa-bullhorn"></i>
+
+                                    @elseif($notification->type === 'pembayaran_berhasil')
 
                                         <i class="fa-solid fa-circle-check"></i>
 
@@ -1714,6 +1744,11 @@
                                     <div class="notification-title">
 
                                         {{ $notification->title }}
+                                        @if($notification->is_announcement)
+                                            <span class="notification-priority {{ $notification->priority }}">
+                                                {{ $notification->priority_label }}
+                                            </span>
+                                        @endif
 
                                     </div>
 
@@ -1768,6 +1803,32 @@
 
     </main>
 
+    <script>
+        const notificationMenu = document.getElementById('studentNotificationMenu');
+        const dashboardMenu = document.getElementById('studentDashboardMenu');
+        const notificationSection = document.getElementById('notifikasi');
+
+        function openStudentNotifications() {
+            notificationMenu.classList.add('active');
+            dashboardMenu.classList.remove('active');
+            notificationSection.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+
+        if (notificationMenu && dashboardMenu && notificationSection) {
+            notificationMenu.addEventListener('click', function (event) {
+                event.preventDefault();
+                history.replaceState(null, '', '#notifikasi');
+                openStudentNotifications();
+            });
+
+            if (window.location.hash === '#notifikasi') {
+                openStudentNotifications();
+            }
+        }
+    </script>
 
 </body>
 

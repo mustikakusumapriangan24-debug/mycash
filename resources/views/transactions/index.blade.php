@@ -129,6 +129,113 @@
         border-radius: 12px;
         background: var(--white);
         color: var(--maroon);
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .cash-settings-button {
+        min-height: 42px;
+        padding: 0 13px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--white);
+        color: var(--maroon);
+        font-size: 11px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .cash-settings-options {
+        padding: 15px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: #fcfaf6;
+    }
+
+    .cash-mode-option {
+        display: block;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: #fff;
+        cursor: pointer;
+    }
+
+    .cash-mode-option input {
+        width: auto;
+        margin-right: 7px;
+    }
+
+    .cash-mode-option strong { font-size: 11px; }
+    .cash-mode-option small {
+        display: block;
+        margin: 5px 0 0 23px;
+        color: var(--text-soft);
+        font-size: 9px;
+    }
+
+    .cash-quick-amounts {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-top: 8px;
+    }
+
+    .cash-quick-amount {
+        padding: 6px 9px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: #fff;
+        color: var(--text);
+        font-size: 9px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .cash-month-range {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .cash-settings-note {
+        margin-top: 10px;
+        color: var(--text-soft);
+        font-size: 9px;
+        line-height: 1.5;
+    }
+
+    .cash-reset-box {
+        margin: 0 25px 20px;
+        padding: 13px;
+        border: 1px solid #e8d8ae;
+        border-radius: 11px;
+        background: #fffcf4;
+    }
+
+    .cash-reset-box strong {
+        display: block;
+        color: var(--maroon);
+        font-size: 10px;
+    }
+
+    .cash-reset-box p {
+        margin: 5px 0 9px;
+        color: var(--text-soft);
+        font-size: 9px;
+    }
+
+    .cash-reset-button {
+        padding: 8px 11px;
+        border: 1px solid var(--gold);
+        border-radius: 8px;
+        background: #fff;
+        color: var(--maroon);
+        font-size: 9px;
+        font-weight: 800;
         cursor: pointer;
     }
 
@@ -279,6 +386,198 @@
         font-weight: 800;
     }
 
+    .report-tabs {
+        display: flex;
+        gap: 8px;
+        max-width: 100%;
+        margin-bottom: 16px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: thin;
+    }
+
+    .report-tab {
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 15px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--white);
+        color: var(--text-soft);
+        font-size: 11px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .report-tab.active {
+        border-color: var(--maroon);
+        background: var(--maroon);
+        color: #fff;
+    }
+
+    .report-panel[hidden] {
+        display: none;
+    }
+
+    .checklist-card {
+        overflow: hidden;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        box-shadow: 0 9px 28px rgba(31,29,32,.05);
+    }
+
+    .checklist-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 23px 26px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .checklist-year-form {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-soft);
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .checklist-year-form select {
+        min-height: 36px;
+        padding: 0 10px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        background: #fff;
+        color: var(--maroon);
+        font: inherit;
+    }
+
+    .checklist-search-form {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .checklist-search-form label {
+        color: var(--text-soft);
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+    .checklist-search-field {
+        width: min(100%, 300px);
+        min-height: 36px;
+        padding: 0 11px;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        outline: none;
+        background: #fff;
+        color: var(--text);
+        font-size: 11px;
+    }
+
+    .checklist-search-field:focus {
+        border-color: var(--gold);
+        box-shadow: 0 0 0 3px rgba(181,154,99,.12);
+    }
+
+    .checklist-table-scroll {
+        width: 100%;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-color: var(--gold) #f1ece4;
+        scrollbar-width: thin;
+    }
+
+    .checklist-table {
+        width: 100%;
+        min-width: 1120px;
+        border-collapse: collapse;
+    }
+
+    .checklist-table th,
+    .checklist-table td {
+        padding: 11px 9px;
+        border-bottom: 1px solid #eee9e2;
+        font-size: 10px;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .checklist-table th {
+        background: #f7f3ed;
+        color: var(--text-soft);
+        font-size: 9px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .checklist-table .checklist-student {
+        min-width: 155px;
+        text-align: left;
+        white-space: normal;
+    }
+
+    .checklist-status {
+        display: grid;
+        justify-items: center;
+        gap: 4px;
+    }
+
+    .checklist-status-icon.paid {
+        color: var(--green);
+    }
+
+    .checklist-status-icon.unpaid {
+        color: #b9b0a5;
+    }
+
+    .checklist-amount {
+        color: var(--text-soft);
+        font-size: 9px;
+    }
+
+    .checklist-amount.paid,
+    .checklist-total {
+        color: var(--maroon);
+        font-weight: 800;
+    }
+
+    .checklist-pagination {
+        justify-content: space-between;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+    }
+
+    .checklist-page-links {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 7px;
+    }
+
+    .checklist-pagination .pagination-info {
+        flex: 0 0 auto;
+        width: auto;
+        margin-left: auto;
+        white-space: nowrap;
+    }
+
+    .checklist-empty {
+        padding: 28px !important;
+        color: var(--text-soft) !important;
+        text-align: center !important;
+    }
+
     .filter-form {
         display: flex;
         align-items: flex-end;
@@ -406,6 +705,25 @@
     .transaction-description.empty {
         color: var(--text-soft);
         font-weight: 400;
+    }
+
+    .receipt-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 9px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--maroon);
+        font-size: 10px;
+        font-weight: 700;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .receipt-link:hover {
+        border-color: var(--gold);
+        background: #f6f1e9;
     }
 
     .category-badge {
@@ -669,6 +987,17 @@
         resize: vertical;
     }
 
+    .transactions-modal input[type="file"] {
+        padding: 9px;
+        font-size: 10px;
+    }
+
+    .field-error {
+        margin-top: 6px;
+        color: #b42318;
+        font-size: 10px;
+    }
+
     .radio-group {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -885,9 +1214,23 @@
         .filter-date { width: 100%; }
         .radio-group { grid-template-columns: 1fr; }
         .transactions-modal { padding: 10px; }
+        .cash-reset-box { margin: 0 16px 16px; }
         .transactions-modal .modal {
             max-height: calc(100vh - 20px);
             border-radius: 15px;
+        }
+        .checklist-header {
+            align-items: flex-start;
+            flex-wrap: wrap;
+            padding: 18px;
+        }
+        .checklist-search-form {
+            align-items: stretch;
+            padding: 14px;
+        }
+        .checklist-search-field {
+            width: 100%;
+            flex: 1 1 100%;
         }
         .modal-footer { flex-direction: column-reverse; }
         .cancel-button,
@@ -937,9 +1280,25 @@
                     </div>
                 </div>
 
-                <button type="button" class="notification-button">
-                    <i class="fa-regular fa-bell"></i>
+                <button
+                    type="button"
+                    class="cash-settings-button"
+                    id="openCashSettingsButton"
+                    aria-label="Pengaturan aturan kas kelas"
+                    title="Pengaturan aturan kas kelas"
+                >
+                    <i class="fa-solid fa-gear"></i>
+                    Aturan Kas
                 </button>
+
+                <a
+                    href="{{ route('pengumuman.index') }}"
+                    class="notification-button"
+                    aria-label="Pengumuman dan notifikasi"
+                    title="Pengumuman dan notifikasi"
+                >
+                    <i class="fa-regular fa-bell"></i>
+                </a>
             </div>
         </div>
 
@@ -993,7 +1352,41 @@
         </div>
     </div>
 
+    <nav class="report-tabs" role="tablist" aria-label="Pilih tampilan transaksi">
+        <button
+            type="button"
+            class="report-tab {{ $activeReportTable === 'transactions' ? 'active' : '' }}"
+            id="transactionsTab"
+            role="tab"
+            aria-controls="transactionReport"
+            aria-selected="{{ $activeReportTable === 'transactions' ? 'true' : 'false' }}"
+            onclick="showTransactionReport('transactions')"
+        >
+            <i class="fa-solid fa-list"></i>
+            Riwayat Transaksi
+        </button>
+        <button
+            type="button"
+            class="report-tab {{ $activeReportTable === 'payments' ? 'active' : '' }}"
+            id="paymentsTab"
+            role="tab"
+            aria-controls="paymentReport"
+            aria-selected="{{ $activeReportTable === 'payments' ? 'true' : 'false' }}"
+            onclick="showTransactionReport('payments')"
+        >
+            <i class="fa-solid fa-clipboard-check"></i>
+            Ceklis Pembayaran Kas
+        </button>
+    </nav>
+
     {{-- RIWAYAT TRANSAKSI --}}
+    <section
+        class="report-panel"
+        id="transactionReport"
+        role="tabpanel"
+        aria-labelledby="transactionsTab"
+        @if($activeReportTable !== 'transactions') hidden @endif
+    >
     <div class="history-card">
         <div class="history-header">
             <div>
@@ -1018,6 +1411,7 @@
                     name="year"
                     value="{{ $selectedYear }}"
                 >
+                <input type="hidden" name="report_table" value="transactions">
 
                 <div class="filter-field">
                     <label class="filter-label">Pencarian</label>
@@ -1098,7 +1492,7 @@
                 </button>
 
                 <a
-                    href="{{ route('transactions.index', ['year' => $selectedYear]) }}"
+                    href="{{ route('transactions.index', ['year' => $selectedYear, 'report_table' => 'transactions']) }}"
                     class="reset-button"
                 >
                     <i class="fa-solid fa-rotate-left"></i>
@@ -1117,6 +1511,7 @@
                             <th>Jenis</th>
                             <th>Kategori</th>
                             <th>Siswa / Keterangan</th>
+                            <th>Bukti Nota / Kwitansi</th>
                             <th>Nominal</th>
                             <th>Aksi</th>
                         </tr>
@@ -1167,6 +1562,22 @@
                                         <div class="transaction-description empty">
                                             Tidak ada keterangan
                                         </div>
+                                    @endif
+                                </td>
+
+                                <td>
+                                    @if($transaction->receipt_path)
+                                        <a
+                                            href="{{ asset('storage/' . $transaction->receipt_path) }}"
+                                            class="receipt-link"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            <i class="fa-solid fa-image"></i>
+                                            Lihat bukti
+                                        </a>
+                                    @else
+                                        <span class="transaction-description empty">-</span>
                                     @endif
                                 </td>
 
@@ -1241,7 +1652,7 @@
         @endif
 
         {{-- PAGINATION --}}
-        @if($transactions->hasPages())
+        @if($transactions->total() > 0)
             <div class="pagination-wrapper">
 
                 {{-- TOMBOL SEBELUMNYA --}}
@@ -1309,6 +1720,340 @@
             </div>
         @endif
     </div>
+    </section>
+
+    <section
+        class="report-panel checklist-card"
+        id="paymentReport"
+        role="tabpanel"
+        aria-labelledby="paymentsTab"
+        @if($activeReportTable !== 'payments') hidden @endif
+    >
+        <div class="checklist-header">
+            <div>
+                <h2 class="history-title">Ceklis Pembayaran Kas Siswa</h2>
+                <p class="history-description">
+                    Lihat status pembayaran bulanan. Geser tabel ke samping untuk melihat semua bulan.
+                </p>
+            </div>
+
+            <form
+                action="{{ route('transactions.index') }}"
+                method="GET"
+                class="checklist-year-form"
+            >
+                <input type="hidden" name="report_table" value="payments">
+                <label for="paymentYear">Tahun:</label>
+                <select
+                    id="paymentYear"
+                    name="year"
+                    onchange="this.form.submit()"
+                >
+                    @for($year = now()->year; $year >= now()->year - 5; $year--)
+                        <option value="{{ $year }}" {{ $selectedYear === $year ? 'selected' : '' }}>
+                            {{ $year }}
+                        </option>
+                    @endfor
+                </select>
+            </form>
+        </div>
+
+        <form
+            action="{{ route('transactions.index') }}"
+            method="GET"
+            class="checklist-search-form"
+        >
+            <input type="hidden" name="report_table" value="payments">
+            <input type="hidden" name="year" value="{{ $selectedYear }}">
+            <label for="paymentSearch">Cari nama atau NIS:</label>
+            <input
+                type="search"
+                id="paymentSearch"
+                name="payment_search"
+                class="checklist-search-field"
+                placeholder="Masukkan nama siswa atau NIS"
+                value="{{ $paymentSearch }}"
+            >
+            <button type="submit" class="search-button">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                Cari
+            </button>
+            @if($paymentSearch !== '')
+                <a
+                    href="{{ route('transactions.index', ['year' => $selectedYear, 'report_table' => 'payments']) }}"
+                    class="reset-button"
+                >
+                    <i class="fa-solid fa-rotate-left"></i>
+                    Reset
+                </a>
+            @endif
+        </form>
+
+        <div
+            class="checklist-table-scroll"
+            role="region"
+            aria-label="Daftar ceklis pembayaran kas siswa, geser ke samping untuk melihat semua periode"
+            tabindex="0"
+        >
+            <table class="checklist-table">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>NIS</th>
+                        <th class="checklist-student">Nama Siswa</th>
+                        @foreach($studentPayments->first()['periods'] ?? [] as $period)
+                            <th title="{{ $period['month_label'] }}">{{ $period['label'] }}</th>
+                        @endforeach
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($studentPayments as $index => $data)
+                        <tr>
+                            <td>{{ ($paymentStudents->firstItem() ?? 1) + $index }}</td>
+                            <td>{{ $data['student']->nis ?? '-' }}</td>
+                            <td class="checklist-student">{{ $data['student']->name }}</td>
+                            @foreach($data['periods'] as $period)
+                                <td>
+                                    <div class="checklist-status">
+                                        <i
+                                            class="fa-solid {{ $period['paid'] ? 'fa-circle-check checklist-status-icon paid' : 'fa-circle-minus checklist-status-icon unpaid' }}"
+                                            aria-label="{{ $period['paid'] ? 'Lunas' : 'Belum lunas' }}"
+                                        ></i>
+                                        <span class="checklist-amount {{ $period['paid'] ? 'paid' : '' }}">
+                                            Rp {{ number_format($period['amount'], 0, ',', '.') }}
+                                        </span>
+                                    </div>
+                                </td>
+                            @endforeach
+                            <td class="checklist-total">
+                                Rp {{ number_format($data['total'], 0, ',', '.') }}
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="{{ count($paymentPeriods) + 4 }}" class="checklist-empty">
+                                Belum ada data siswa.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        @if($paymentStudents->total() > 0)
+            <div class="pagination-wrapper checklist-pagination">
+                <nav class="checklist-page-links" aria-label="Halaman ceklis pembayaran kas">
+                    @if($paymentStudents->previousPageUrl())
+                        <a
+                            href="{{ $paymentStudents->previousPageUrl() }}"
+                            class="pagination-arrow"
+                            aria-label="Halaman sebelumnya"
+                        >
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </a>
+                    @else
+                        <span class="pagination-arrow disabled" aria-disabled="true">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </span>
+                    @endif
+
+                    @foreach(
+                        $paymentStudents->getUrlRange(
+                            max(1, $paymentStudents->currentPage() - 2),
+                            min($paymentStudents->lastPage(), $paymentStudents->currentPage() + 2)
+                        ) as $page => $url
+                    )
+                        @if($paymentStudents->currentPage() === $page)
+                            <span class="pagination-page active" aria-current="page">{{ $page }}</span>
+                        @else
+                            <a href="{{ $url }}" class="pagination-page" aria-label="Halaman {{ $page }}">
+                                {{ $page }}
+                            </a>
+                        @endif
+                    @endforeach
+
+                    @if($paymentStudents->nextPageUrl())
+                        <a
+                            href="{{ $paymentStudents->nextPageUrl() }}"
+                            class="pagination-arrow"
+                            aria-label="Halaman berikutnya"
+                        >
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+                    @else
+                        <span class="pagination-arrow disabled" aria-disabled="true">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </span>
+                    @endif
+                </nav>
+
+                <span class="pagination-info">
+                    Menampilkan {{ $paymentStudents->firstItem() ?? 0 }}–{{ $paymentStudents->lastItem() ?? 0 }}
+                    dari {{ $paymentStudents->total() }} siswa
+                </span>
+            </div>
+        @endif
+    </section>
+</div>
+
+<script>
+    function showTransactionReport(table) {
+        const showPayments = table === 'payments';
+        const transactionReport = document.getElementById('transactionReport');
+        const paymentReport = document.getElementById('paymentReport');
+        const transactionsTab = document.getElementById('transactionsTab');
+        const paymentsTab = document.getElementById('paymentsTab');
+
+        transactionReport.hidden = showPayments;
+        paymentReport.hidden = !showPayments;
+
+        transactionsTab.classList.toggle('active', !showPayments);
+        transactionsTab.setAttribute('aria-selected', String(!showPayments));
+        paymentsTab.classList.toggle('active', showPayments);
+        paymentsTab.setAttribute('aria-selected', String(showPayments));
+
+        const url = new URL(window.location.href);
+        url.searchParams.set('report_table', showPayments ? 'payments' : 'transactions');
+        window.history.replaceState({}, '', url);
+    }
+</script>
+
+{{-- MODAL PENGATURAN ATURAN KAS --}}
+<div class="transactions-modal" id="cashSettingsModal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cashSettingsTitle">
+        <div class="modal-header">
+            <div>
+                <h2 class="modal-title" id="cashSettingsTitle">Pengaturan Aturan Kas Kelas</h2>
+                <p class="modal-description">
+                    Konfigurasi periode, nominal iuran, rentang bulan, dan reset aturan.
+                </p>
+            </div>
+            <button type="button" class="close-button" id="closeCashSettingsButton" aria-label="Tutup">
+                ×
+            </button>
+        </div>
+
+        <form action="{{ route('cash-settings.bendahara.update') }}" method="POST">
+            @csrf
+            @method('PUT')
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Tipe Periode Tagihan</label>
+                    <div class="cash-settings-options radio-group">
+                        <label class="cash-mode-option">
+                            <input
+                                type="radio"
+                                name="tipe_periode"
+                                value="Bulanan"
+                                {{ old('tipe_periode', $periodType) === 'Bulanan' ? 'checked' : '' }}
+                            >
+                            <strong>Mode Bulanan</strong>
+                            <small>Tagihan 1x setiap bulan sesuai rentang aktif.</small>
+                        </label>
+                        <label class="cash-mode-option">
+                            <input
+                                type="radio"
+                                name="tipe_periode"
+                                value="Mingguan"
+                                {{ old('tipe_periode', $periodType) === 'Mingguan' ? 'checked' : '' }}
+                            >
+                            <strong>Mode Mingguan</strong>
+                            <small>Tagihan 1x per pekan (M1–M48 setahun).</small>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="cashFee" class="form-label">Besaran Iuran per Periode</label>
+                    <div class="amount-wrapper">
+                        <span class="amount-prefix">Rp</span>
+                        <input
+                            type="number"
+                            id="cashFee"
+                            name="nominal_standar"
+                            min="1"
+                            step="1"
+                            value="{{ old('nominal_standar', $periodFee) }}"
+                            placeholder="Contoh: 5000"
+                            required
+                        >
+                    </div>
+                    @if($periodFee === null)
+                        <div class="cash-settings-note">
+                            Tarif kas belum ditentukan. Simpan nominal di sini sebelum mencatat pembayaran siswa.
+                        </div>
+                    @endif
+                    <div class="cash-quick-amounts">
+                        @foreach([2000, 5000, 10000, 20000] as $quickAmount)
+                            <button type="button" class="cash-quick-amount" data-cash-amount="{{ $quickAmount }}">
+                                Rp {{ number_format($quickAmount, 0, ',', '.') }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+
+                @php
+                    $monthNames = [
+                        1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
+                        4 => 'April', 5 => 'Mei', 6 => 'Juni',
+                        7 => 'Juli', 8 => 'Agustus', 9 => 'September',
+                        10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+                    ];
+                @endphp
+                <div class="form-group">
+                    <label class="form-label">Rentang Periode Pembayaran Kas</label>
+                    <div class="cash-month-range">
+                        <div>
+                            <label for="cashMonthStart" class="form-label">Bulan Awal (Mulai)</label>
+                            <select id="cashMonthStart" name="bulan_mulai" required>
+                                @foreach($monthNames as $monthNumber => $monthName)
+                                    <option
+                                        value="{{ $monthNumber }}"
+                                        {{ (int) old('bulan_mulai', $cashSetting?->bulan_mulai ?? 7) === $monthNumber ? 'selected' : '' }}
+                                    >{{ $monthName }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label for="cashMonthEnd" class="form-label">Bulan Akhir (Selesai)</label>
+                            <select id="cashMonthEnd" name="bulan_akhir" required>
+                                @foreach($monthNames as $monthNumber => $monthName)
+                                    <option
+                                        value="{{ $monthNumber }}"
+                                        {{ (int) old('bulan_akhir', $cashSetting?->bulan_akhir ?? 6) === $monthNumber ? 'selected' : '' }}
+                                    >{{ $monthName }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <p class="cash-settings-note">
+                        Rentang bawaan tahun ajaran adalah Juli–Juni. Mode mingguan menggunakan 4 periode per bulan, hingga M48.
+                        Ceklis pembayaran akan menyesuaikan rentang dan jenis periode ini.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="cancel-button" id="cancelCashSettingsButton">Batal</button>
+                <button type="submit" class="submit-button">
+                    <i class="fa-solid fa-floppy-disk"></i> Simpan Aturan Kas
+                </button>
+            </div>
+        </form>
+
+        <div class="cash-reset-box">
+            <strong><i class="fa-solid fa-rotate"></i> Reset Aturan Kas</strong>
+            <p>Mengosongkan tarif kas dan mengembalikan periode ke Bulanan Juli–Juni. Data transaksi serta ceklis pembayaran tetap utuh.</p>
+            <form
+                action="{{ route('cash-settings.bendahara.reset') }}"
+                method="POST"
+                onsubmit="return confirm('Kosongkan tarif kas dan kembalikan periode ke Bulanan Juli–Juni? Data pembayaran tidak akan dihapus.')"
+            >
+                @csrf
+                <button type="submit" class="cash-reset-button">Kosongkan Tarif &amp; Reset Periode</button>
+            </form>
+        </div>
+    </div>
 </div>
 
 {{-- MODAL TAMBAH TRANSAKSI --}}
@@ -1331,6 +2076,7 @@
             <form
                 action="{{ route('transactions.store') }}"
                 method="POST"
+                enctype="multipart/form-data"
                 id="transactionForm"
             >
                 @csrf
@@ -1367,7 +2113,28 @@
                     </div>
                 </div>
 
-                <div class="form-group" id="categorySection">
+                <div class="form-group" id="incomeTypeSection" style="display: none;">
+                    <label for="incomeType" class="form-label">
+                        Jenis Pemasukan <span class="required">*</span>
+                    </label>
+                    <select name="income_type" id="incomeType">
+                        <option
+                            value="general"
+                            {{ old('income_type', 'general') === 'general' ? 'selected' : '' }}
+                        >
+                            Pemasukan Umum
+                        </option>
+                        <option
+                            value="student_cash"
+                            {{ $periodFee === null ? 'disabled' : '' }}
+                            {{ old('income_type') === 'student_cash' ? 'selected' : '' }}
+                        >
+                            Iuran Kas Siswa{{ $periodFee === null ? ' (tarif belum ditentukan)' : '' }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="categorySection" style="display: none;">
                     <label for="category" class="form-label">
                         Kategori <span class="required">*</span>
                     </label>
@@ -1422,21 +2189,48 @@
                     </div>
                 </div>
 
-                {{-- BULAN PEMBAYARAN --}}
+                {{-- PERIODE PEMBAYARAN --}}
                 <div class="form-group student-section" id="paymentMonthSection">
-                    <label for="paymentMonth" class="form-label">
-                        Bulan Pembayaran <span class="required">*</span>
-                    </label>
+                    <input type="hidden" name="payment_year" value="{{ $selectedYear }}">
 
-                    <input
-                        type="month"
-                        name="payment_month"
-                        id="paymentMonth"
-                        value="{{ old('payment_month', now()->format('Y-m')) }}"
-                    >
+                    @if($periodType === 'Mingguan')
+                        <label for="paymentWeek" class="form-label">
+                            Mulai Periode Pembayaran <span class="required">*</span>
+                        </label>
+                        <select name="payment_week" id="paymentWeek">
+                            @foreach($paymentPeriods as $period)
+                                <option
+                                    value="{{ $period['week_number'] }}"
+                                    {{ (string) old('payment_week', $defaultPaymentWeek) === (string) $period['week_number'] ? 'selected' : '' }}
+                                >
+                                    {{ $period['label'] }} — {{ $period['month_label'] }}
+                                </option>
+                            @endforeach
+                        </select>
+                    @else
+                        <label for="paymentMonth" class="form-label">
+                            Mulai Bulan Pembayaran <span class="required">*</span>
+                        </label>
+                        <select name="payment_month" id="paymentMonth">
+                            @foreach($paymentPeriods as $period)
+                                <option
+                                    value="{{ $period['key'] }}"
+                                    {{ old('payment_month', $defaultPaymentMonth) === $period['key'] ? 'selected' : '' }}
+                                >
+                                    {{ $period['month_label'] }}
+                                </option>
+                            @endforeach
+                        </select>
+                    @endif
 
                     <div class="helper-text">
-                        Menunjukkan bulan saat pembayaran kas dilakukan.
+                        Pembayaran akan dialokasikan mulai periode yang dipilih, lalu ke periode aktif berikutnya bila masih ada sisa nominal.
+                        Iuran per periode:
+                        @if($periodFee !== null)
+                            Rp {{ number_format($periodFee, 0, ',', '.') }}.
+                        @else
+                            belum ditentukan. Tetapkan tarif melalui Pengaturan Kas sebelum mencatat pembayaran.
+                        @endif
                     </div>
                 </div>
 
@@ -1477,6 +2271,24 @@
                         id="description"
                         placeholder="Masukkan keterangan transaksi..."
                     >{{ old('description') }}</textarea>
+                </div>
+
+                <div class="form-group" id="receiptSection" style="display: none;">
+                    <label for="receipt" class="form-label">
+                        Foto Bukti Nota / Kwitansi Kertas
+                    </label>
+                    <input
+                        type="file"
+                        name="receipt"
+                        id="receipt"
+                        accept="image/jpeg,image/png,image/webp"
+                    >
+                    <div class="helper-text">
+                        Opsional. Format JPG, PNG, atau WEBP, maksimal 5 MB.
+                    </div>
+                    @error('receipt')
+                        <div class="field-error">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="modal-footer">
@@ -1617,6 +2429,36 @@
     const openModalButton = document.getElementById('openModalButton');
     const closeModalButton = document.getElementById('closeModalButton');
     const cancelButton = document.getElementById('cancelButton');
+    const cashSettingsModal = document.getElementById('cashSettingsModal');
+    const openCashSettingsButton = document.getElementById('openCashSettingsButton');
+    const closeCashSettingsButton = document.getElementById('closeCashSettingsButton');
+    const cancelCashSettingsButton = document.getElementById('cancelCashSettingsButton');
+    const cashFeeInput = document.getElementById('cashFee');
+
+    function openCashSettings() {
+        cashSettingsModal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeCashSettings() {
+        cashSettingsModal.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+
+    openCashSettingsButton.addEventListener('click', openCashSettings);
+    closeCashSettingsButton.addEventListener('click', closeCashSettings);
+    cancelCashSettingsButton.addEventListener('click', closeCashSettings);
+    cashSettingsModal.addEventListener('click', function(event) {
+        if (event.target === cashSettingsModal) {
+            closeCashSettings();
+        }
+    });
+
+    document.querySelectorAll('[data-cash-amount]').forEach(function(button) {
+        button.addEventListener('click', function() {
+            cashFeeInput.value = button.dataset.cashAmount;
+        });
+    });
 
     function openModal() {
         modal.classList.add('show');
@@ -1641,11 +2483,15 @@
     // ELEMEN FORM TAMBAH
     const typeIn = document.getElementById('typeIn');
     const typeOut = document.getElementById('typeOut');
+    const incomeTypeSection = document.getElementById('incomeTypeSection');
+    const incomeType = document.getElementById('incomeType');
     const category = document.getElementById('category');
     const categorySection = document.getElementById('categorySection');
 
     const studentSection = document.getElementById('studentSection');
     const paymentMonthSection = document.getElementById('paymentMonthSection');
+    const paymentPeriodInput = document.getElementById('paymentMonth')
+        || document.getElementById('paymentWeek');
 
     const studentSearch = document.getElementById('studentSearch');
     const studentResults = document.getElementById('studentResults');
@@ -1659,6 +2505,8 @@
 
     const descriptionSection = document.getElementById('descriptionSection');
     const description = document.getElementById('description');
+    const receiptSection = document.getElementById('receiptSection');
+    const receiptInput = document.getElementById('receipt');
 
     const oldCategory = @json(old('category'));
 
@@ -1669,15 +2517,11 @@
 
         const placeholder = document.createElement('option');
         placeholder.value = '';
-        placeholder.textContent = typeOut.checked
-            ? 'Pilih kategori pengeluaran'
-            : 'Pilih kategori pemasukan';
+        placeholder.textContent = 'Pilih kategori pengeluaran';
 
         category.appendChild(placeholder);
 
-        const categories = typeOut.checked
-            ? expenseCategories
-            : incomeCategories;
+        const categories = typeOut.checked ? expenseCategories : [];
 
         categories.forEach(function(item) {
             const option = document.createElement('option');
@@ -1700,12 +2544,20 @@
     // MEMPERBARUI FORM TAMBAH
     function updateForm() {
         const isIncome = typeIn.checked;
+        const isExpense = typeOut.checked;
         const isStudentCash = isIncome &&
-            category.value === 'Iuran Kas Siswa';
+            incomeType.value === 'student_cash';
 
-        categorySection.style.display = 'block';
-        category.disabled = false;
-        category.required = true;
+        receiptSection.style.display = isExpense ? 'block' : 'none';
+        receiptInput.disabled = !isExpense;
+
+        incomeTypeSection.style.display = isIncome ? 'block' : 'none';
+        incomeType.disabled = !isIncome;
+        incomeType.required = isIncome;
+
+        categorySection.style.display = isExpense ? 'block' : 'none';
+        category.disabled = !isExpense;
+        category.required = isExpense;
 
         if (isStudentCash) {
             studentSection.classList.add('show');
@@ -1715,7 +2567,7 @@
             description.disabled = true;
 
             studentId.required = true;
-            document.getElementById('paymentMonth').required = true;
+            paymentPeriodInput.required = true;
         } else {
             studentSection.classList.remove('show');
             paymentMonthSection.classList.remove('show');
@@ -1724,7 +2576,7 @@
             description.disabled = false;
 
             studentId.required = false;
-            document.getElementById('paymentMonth').required = false;
+            paymentPeriodInput.required = false;
         }
     }
 
@@ -1740,11 +2592,12 @@
         resetStudentSelection();
     });
 
-    category.addEventListener('change', function() {
-        if (category.value !== 'Iuran Kas Siswa') {
-            resetStudentSelection();
-        }
+    incomeType.addEventListener('change', function() {
+        updateForm();
+        resetStudentSelection();
+    });
 
+    category.addEventListener('change', function() {
         updateForm();
     });
 
@@ -1917,7 +2770,7 @@
             editCategory.required = false;
 
             editCategoryHelp.textContent =
-                'Kategori pembayaran kas siswa tidak dapat diubah karena terhubung dengan data pembayaran bulanan.';
+                'Kategori pembayaran kas siswa tidak dapat diubah karena terhubung dengan alokasi periode pembayaran.';
 
             editDescriptionSection.style.display = 'none';
             editDescription.disabled = true;
@@ -1966,6 +2819,11 @@
             if (editModal.classList.contains('show')) {
                 closeEditModal();
             }
+
+            if (cashSettingsModal.classList.contains('show')) {
+                closeCashSettings();
+            }
+
         }
     });
 
@@ -1986,7 +2844,9 @@
     }
 
     // BUKA MODAL KEMBALI JIKA VALIDASI GAGAL
-    @if($errors->any())
+    @if(old('nominal_standar') !== null)
+        openCashSettings();
+    @elseif($errors->getBag('default')->any())
         openModal();
     @endif
 </script>

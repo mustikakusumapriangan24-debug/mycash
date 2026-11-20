@@ -18,6 +18,8 @@ class Kelas extends Model
         'id_wali_kelas',
         'tipe_periode',
         'nominal_standar',
+        'bulan_mulai',
+        'bulan_akhir',
         'status',
     ];
 
@@ -33,5 +35,10 @@ class Kelas extends Model
     public function bendahara(): HasMany
     {
         return $this->hasMany(Bendahara::class, 'kelas_id');
+    }
+
+    public function students(): HasMany
+    {
+        return $this->hasMany(Student::class, 'kelas_id');
     }
 }

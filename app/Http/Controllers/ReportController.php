@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Transaction;
 use App\Models\Student;
 use App\Models\StudentPayment;
+use App\Models\StudentWeeklyPayment;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
@@ -29,7 +30,8 @@ class ReportController extends Controller
         $category = $request->input('category', 'all');
 
         // Query transaksi
-        $transactionQuery = Transaction::query();
+        $transactionQuery = Transaction::query()
+            ->with('bendahara.kelas');
 
         if ($startDate) {
             $transactionQuery->whereDate('created_at', '>=', $startDate);
@@ -98,6 +100,14 @@ class ReportController extends Controller
             ->orderBy('payment_month', 'asc')
             ->get()
             ->groupBy('transaction_id');
+        $weeklyPaymentDetails = StudentWeeklyPayment::whereIn(
+            'transaction_id',
+            $transactionIds
+        )
+            ->orderBy('school_year')
+            ->orderBy('week_number')
+            ->get()
+            ->groupBy('transaction_id');
 
         // Total kas siswa berdasarkan periode
         $paymentQuery = StudentPayment::query();
@@ -110,12 +120,24 @@ class ReportController extends Controller
             $paymentQuery->whereDate('payment_month', '<=', $endDate);
         }
 
-        $totalKasSiswa = $paymentQuery->sum('amount');
+        $weeklyPaymentQuery = StudentWeeklyPayment::query();
+
+        if ($startDate) {
+            $weeklyPaymentQuery->whereDate('paid_at', '>=', $startDate);
+        }
+
+        if ($endDate) {
+            $weeklyPaymentQuery->whereDate('paid_at', '<=', $endDate);
+        }
+
+        $totalKasSiswa = $paymentQuery->sum('amount')
+            + $weeklyPaymentQuery->sum('amount');
 
         return compact(
             'transactions',
             'students',
             'paymentDetails',
+            'weeklyPaymentDetails',
             'totalPemasukan',
             'totalPengeluaran',
             'totalSaldo',

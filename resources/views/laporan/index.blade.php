@@ -15,6 +15,7 @@
     $transactions = $transactions ?? collect();
     $students = $students ?? collect();
     $paymentDetails = $paymentDetails ?? collect();
+    $weeklyPaymentDetails = $weeklyPaymentDetails ?? collect();
     $categories = $categories ?? collect();
 
     $totalSaldo = $totalSaldo ?? 0;
@@ -680,8 +681,13 @@
                                     $transaction->id,
                                     collect()
                                 );
+                                $weeklyDetails = $weeklyPaymentDetails->get(
+                                    $transaction->id,
+                                    collect()
+                                );
 
-                                $hasDetail = $details->isNotEmpty();
+                                $hasDetail = $details->isNotEmpty()
+                                    || $weeklyDetails->isNotEmpty();
 
                                 $studentNames = $details
                                     ->map(function ($payment) use ($students) {
@@ -689,9 +695,15 @@
 
                                         return $student ? $student->name : null;
                                     })
+                                    ->merge($weeklyDetails->map(function ($payment) use ($students) {
+                                        $student = $students->get($payment->student_id);
+
+                                        return $student ? $student->name : null;
+                                    }))
                                     ->filter()
                                     ->unique()
                                     ->values();
+                                $periodFee = $transaction->bendahara?->kelas?->nominal_standar;
 
                                 $transactionDate = $transaction->created_at
                                     ? \Carbon\Carbon::parse($transaction->created_at)
@@ -816,7 +828,8 @@
                                                                     $month . '-01'
                                                                 )->translatedFormat('F');
 
-                                                                $isPaid = $monthAmount >= 10000;
+                                                                $isPaid = $periodFee !== null
+                                                                    && $monthAmount >= (float) $periodFee;
                                                             @endphp
 
                                                             @if($isPaid)
@@ -831,11 +844,43 @@
                                                                     <span>{{ $monthLabel }}</span>
                                                                     <span class="payment-status">Belum Lunas</span>
                                                                     <span class="partial-amount">
-                                                                        Rp{{ number_format($monthAmount, 0, ',', '.') }}/10.000
+                                                                        @if($periodFee !== null)
+                                                                            Rp{{ number_format($monthAmount, 0, ',', '.') }}/{{ number_format((float) $periodFee, 0, ',', '.') }}
+                                                                        @else
+                                                                            Tarif belum ditentukan
+                                                                        @endif
                                                                     </span>
                                                                 </div>
                                                             @endif
 
+                                                        @endforeach
+
+                                                        @php
+                                                            $weeklyStudentDetails = $weeklyDetails->groupBy('student_id');
+                                                        @endphp
+                                                        @foreach($weeklyStudentDetails as $studentId => $studentWeeks)
+                                                            <div class="payment-month-list">
+                                                                @foreach($studentWeeks as $weeklyPayment)
+                                                                    @php
+                                                                        $isWeekPaid = $periodFee !== null
+                                                                            && (float) $weeklyPayment->amount >= (float) $periodFee;
+                                                                    @endphp
+                                                                    <div class="payment-month {{ $isWeekPaid ? 'paid' : 'unpaid' }}">
+                                                                        <i class="fa-solid {{ $isWeekPaid ? 'fa-circle-check' : 'fa-circle-exclamation' }}"></i>
+                                                                        <span>M{{ $weeklyPayment->week_number }} · {{ $weeklyPayment->school_year }}</span>
+                                                                        <span class="payment-status">{{ $isWeekPaid ? 'Lunas' : 'Belum Lunas' }}</span>
+                                                                        @unless($isWeekPaid)
+                                                                            <span class="partial-amount">
+                                                                                @if($periodFee !== null)
+                                                                                    Rp{{ number_format((float) $weeklyPayment->amount, 0, ',', '.') }}/{{ number_format((float) $periodFee, 0, ',', '.') }}
+                                                                                @else
+                                                                                    Tarif belum ditentukan
+                                                                                @endif
+                                                                            </span>
+                                                                        @endunless
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
                                                         @endforeach
 
                                                     </div>

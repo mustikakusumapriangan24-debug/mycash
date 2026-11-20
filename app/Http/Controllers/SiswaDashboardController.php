@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Transaction;
 use App\Models\Notification;
+use App\Models\AnnouncementRecipient;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SiswaDashboardController extends Controller
 {
@@ -26,21 +29,72 @@ class SiswaDashboardController extends Controller
             ->take(5)
             ->get();
 
-        // Ambil notifikasi milik siswa yang sedang login
-        $notifications = Notification::where(
-            'user_id',
-            auth()->id()
-        )
+        // Gabungkan notifikasi sistem dengan pengumuman yang ditujukan ke siswa.
+        $systemNotifications = Notification::where('user_id', auth()->id())
             ->latest()
             ->take(5)
-            ->get();
+            ->get()
+            ->map(function (Notification $notification) {
+                return (object) [
+                    'id' => $notification->id,
+                    'type' => $notification->type,
+                    'title' => $notification->title,
+                    'message' => $notification->message,
+                    'read_at' => $notification->read_at,
+                    'created_at' => $notification->created_at,
+                    'is_announcement' => false,
+                    'priority' => null,
+                    'priority_label' => null,
+                ];
+            });
 
-        // Hitung jumlah notifikasi yang belum dibaca
-        $unreadNotifications = Notification::where(
-            'user_id',
-            auth()->id()
-        )
-            ->whereNull('read_at')
+        $announcementNotifications = DB::table('pengumuman_penerima')
+            ->join(
+                'pengumuman',
+                'pengumuman.id',
+                '=',
+                'pengumuman_penerima.pengumuman_id'
+            )
+            ->where('pengumuman_penerima.user_id', auth()->id())
+            ->orderByDesc('pengumuman_penerima.created_at')
+            ->take(5)
+            ->get([
+                'pengumuman_penerima.id as id',
+                'pengumuman_penerima.dibaca_at as read_at',
+                'pengumuman_penerima.created_at as created_at',
+                'pengumuman.judul as title',
+                'pengumuman.isi as message',
+                'pengumuman.prioritas as priority',
+            ])
+            ->map(function ($announcement) {
+                $priority = $announcement->priority ?? 'normal';
+
+                return (object) [
+                    'id' => $announcement->id,
+                    'type' => 'pengumuman',
+                    'title' => $announcement->title,
+                    'message' => $announcement->message,
+                    'read_at' => $announcement->read_at,
+                    'created_at' => Carbon::parse($announcement->created_at),
+                    'is_announcement' => true,
+                    'priority' => $priority,
+                    'priority_label' => [
+                        'normal' => 'Normal',
+                        'important' => 'Penting',
+                        'urgent' => 'Mendesak',
+                    ][$priority] ?? 'Normal',
+                ];
+            });
+
+        $notifications = $systemNotifications
+            ->concat($announcementNotifications)
+            ->sortByDesc('created_at')
+            ->take(5)
+            ->values();
+
+        $unreadAnnouncements = DB::table('pengumuman_penerima')
+            ->where('user_id', auth()->id())
+            ->whereNull('dibaca_at')
             ->count();
 
         return view('siswa.dashboard', compact(
@@ -49,7 +103,7 @@ class SiswaDashboardController extends Controller
             'totalSaldo',
             'transactions',
             'notifications',
-            'unreadNotifications'
+            'unreadAnnouncements'
         ));
     }
 
@@ -68,6 +122,20 @@ class SiswaDashboardController extends Controller
             'read_at' => now(),
         ]);
 
-        return redirect()->back();
+        return redirect()->to(route('siswa.dashboard') . '#notifikasi');
+    }
+
+    public function markAnnouncementAsRead(Request $request, $id)
+    {
+        $recipient = AnnouncementRecipient::where(
+            'user_id',
+            auth()->id()
+        )->findOrFail($id);
+
+        $recipient->update([
+            'dibaca_at' => now(),
+        ]);
+
+        return redirect()->to(route('siswa.dashboard') . '#notifikasi');
     }
 }

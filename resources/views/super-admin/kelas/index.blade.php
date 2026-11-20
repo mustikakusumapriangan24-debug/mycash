@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Kelas - MyCash</title>
+    <title>Kelola Kelas - MyCash</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -36,6 +36,147 @@
             margin-left: 250px;
             padding: 32px;
             min-height: 100vh;
+        }
+
+        .admin-strip {
+            min-height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin: -32px -32px 27px;
+            padding: 0 32px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255, 254, 252, .9);
+        }
+
+        .admin-identity,
+        .admin-date {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .admin-role {
+            padding: 6px 11px;
+            border-radius: 20px;
+            background: #F1ECE4;
+            color: var(--maroon);
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: .5px;
+        }
+
+        .admin-date {
+            padding: 8px 11px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: var(--white);
+        }
+
+        .class-page-heading {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 22px;
+            padding-bottom: 17px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .class-page-heading h1 {
+            margin: 0;
+            color: var(--text);
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .class-page-heading p {
+            margin-top: 7px;
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.6;
+        }
+
+        .class-count,
+        .panel-count {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 9px;
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            background: #FAF7F0;
+            color: var(--text-soft, #756E69);
+            font-size: 9px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .class-count { margin-left: 8px; vertical-align: middle; }
+
+        .panel-header {
+            align-items: center;
+        }
+
+        .panel-header-title {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 9px;
+        }
+
+        .panel-header-title h2 {
+            margin: 0;
+        }
+
+        .panel-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+            gap: 9px;
+        }
+
+        .class-search {
+            position: relative;
+            width: min(255px, 100%);
+        }
+
+        .class-search i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .class-search input {
+            width: 100%;
+            min-height: 38px;
+            padding: 9px 12px 9px 34px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #FAF7F0;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 10px;
+        }
+
+        .class-search input:focus {
+            outline: 2px solid rgba(181,154,99,.2);
+            border-color: var(--gold);
+        }
+
+        .btn-add {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            min-height: 38px;
+            padding: 9px 13px;
         }
 
         .topbar {
@@ -124,6 +265,15 @@
             color: var(--gold);
         }
 
+        .panel-header-title h2 {
+            margin-bottom: 0;
+        }
+
+        .panel-actions .btn-add {
+            display: inline-flex;
+            align-items: center;
+        }
+
         .alert {
             margin: 20px 22px 0;
             padding: 13px 16px;
@@ -157,7 +307,7 @@
             width: 100%;
             border-collapse: collapse;
             text-align: left;
-            min-width: 1050px;
+            min-width: 900px;
         }
 
         th {
@@ -178,6 +328,76 @@
         .class-code {
             color: var(--maroon);
             font-weight: 700;
+        }
+
+        .class-name {
+            display: block;
+            color: var(--text);
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .class-meta,
+        .cash-range {
+            display: block;
+            margin-top: 5px;
+            color: var(--muted);
+            font-size: 10px;
+        }
+
+        .class-info-main {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 7px;
+        }
+
+        .class-code-badge,
+        .cashier-badge,
+        .student-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 8px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: #FAF7F0;
+            color: var(--muted);
+            font-size: 9px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .student-badge {
+            border-color: #D7E5CB;
+            background: #EEF5E8;
+            color: #52723D;
+        }
+
+        .class-info-sub {
+            display: block;
+            margin-top: 5px;
+            color: var(--muted);
+            font-size: 9px;
+        }
+
+        .wali-cell strong {
+            display: block;
+            color: var(--text);
+            font-size: 10px;
+        }
+
+        .wali-cell small {
+            display: block;
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 9px;
+        }
+
+        .cash-rule {
+            color: var(--maroon);
+            font-weight: 800;
+            white-space: nowrap;
         }
 
         .status {
@@ -201,16 +421,17 @@
         .actions {
             display: flex;
             align-items: center;
-            gap: 7px;
+            justify-content: flex-end;
+            gap: 6px;
         }
 
         .btn-action {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            padding: 8px 10px;
-            border-radius: 7px;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
             font-family: inherit;
             font-size: 10px;
             font-weight: 700;
@@ -221,24 +442,23 @@
         }
 
         .btn-detail {
-            background: #f5f0e5;
-            color: #80652b;
-            border: 1px solid #e9ddc1;
-        }
-
-        .btn-detail:hover {
-            background: #eadbb7;
-        }
-
-        .btn-edit {
             background: var(--maroon);
-            color: white;
+            color: #fff;
             border: 1px solid var(--maroon);
         }
 
+        .btn-detail:hover {
+            background: var(--dark-maroon);
+        }
+
+        .btn-edit {
+            background: #F1ECE4;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
         .btn-edit:hover {
-            background: #6b101c;
-            color: var(--gold);
+            background: #E8DFD2;
         }
 
         .btn-delete {
@@ -293,6 +513,51 @@
             text-align: center;
             color: var(--muted);
             font-size: 10px;
+        }
+
+        .pagination-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 20px;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 10px;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .pagination a,
+        .pagination span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 32px;
+            height: 32px;
+            padding: 0 8px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--white);
+            color: var(--text);
+            font-size: 10px;
+            text-decoration: none;
+        }
+
+        .pagination .current {
+            border-color: var(--gold);
+            background: var(--gold);
+            color: #3E3D38;
+            font-weight: 800;
+        }
+
+        .pagination .disabled {
+            color: #B5ADA5;
+            pointer-events: none;
         }
 
         /* MODAL */
@@ -459,6 +724,17 @@
                 flex-direction: column;
             }
 
+            .admin-strip {
+                margin: -20px -15px 20px;
+                padding: 0 15px;
+            }
+
+            .class-page-heading h1 { font-size: 21px; }
+            .panel-actions { width: 100%; justify-content: stretch; }
+            .class-search { width: 100%; flex: 1 1 100%; }
+            .panel-actions .btn-add { width: 100%; justify-content: center; }
+            .pagination-footer { align-items: flex-start; flex-direction: column; }
+            .pagination { max-width: 100%; overflow-x: auto; }
             .modal-box {
                 padding: 23px;
             }
@@ -473,16 +749,24 @@
 
 <main class="main">
 
-    <header class="topbar">
-        <div>
-            <div class="eyebrow">Panel Administrasi Utama</div>
-            <h1>Data Kelas</h1>
-            <p>Kelola dan pantau data kelas yang terdaftar di MyCash.</p>
+    <div class="admin-strip">
+        <div class="admin-identity">
+            <span class="admin-role">ADMINISTRATOR</span>
+            <span>Pengaturan Sistem &amp; Hak Akses</span>
         </div>
+        <div class="admin-date">
+            <i class="fa-regular fa-calendar"></i>
+            {{ now()->translatedFormat('d M Y') }}
+        </div>
+    </div>
 
-        <div class="role">
-            <i class="fa-solid fa-user-shield"></i>
-            SUPER ADMIN
+    <header class="class-page-heading">
+        <div>
+            <h1>
+                Kelola Kelas
+                <span class="class-count">Total {{ number_format($totalKelas, 0, ',', '.') }} Kelas</span>
+            </h1>
+            <p>Manajemen rombongan belajar, wali kelas, dan bendahara yang ditugaskan.</p>
         </div>
     </header>
 
@@ -490,14 +774,35 @@
 
         <div class="panel-header">
             <div>
-                <h2>Daftar Kelas</h2>
-                <p>Informasi kelas, wali kelas, periode, dan status kelas.</p>
+                <div class="panel-header-title">
+                    <h2>Data Master Rombel Kelas</h2>
+                    <span class="panel-count">{{ number_format($kelas->total(), 0, ',', '.') }} Kelas</span>
+                </div>
             </div>
 
-            <a href="{{ route('super-admin.kelas.create') }}" class="btn-add">
-                <i class="fa-solid fa-plus"></i>
-                Tambah Kelas
-            </a>
+            <div class="panel-actions">
+                <form action="{{ route('super-admin.kelas.index') }}" method="GET" class="class-search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input
+                        type="search"
+                        name="search"
+                        value="{{ $search }}"
+                        placeholder="Cari rombel kelas..."
+                        aria-label="Cari rombel kelas"
+                    >
+                </form>
+
+                @if($search !== '')
+                    <a href="{{ route('super-admin.kelas.index') }}" class="btn-action btn-edit" title="Hapus pencarian" aria-label="Hapus pencarian">
+                        <i class="fa-solid fa-xmark"></i>
+                    </a>
+                @endif
+
+                <a href="{{ route('super-admin.kelas.create') }}" class="btn-add">
+                    <i class="fa-solid fa-plus"></i>
+                    Tambah Kelas Baru
+                </a>
+            </div>
         </div>
 
         @if (session('success'))
@@ -523,87 +828,105 @@
                 <thead>
                     <tr>
                         <th>No.</th>
-                        <th>Kode Kelas</th>
+                        <th>Kelas &amp; Info</th>
                         <th>Wali Kelas</th>
-                        <th>Tipe Periode</th>
-                        <th>Nominal Standar</th>
-                        <th>Status</th>
-                        <th>Aksi</th>
+                        <th>Siswa</th>
+                        <th>Bendahara</th>
+                        <th style="text-align: right;">Aksi</th>
                     </tr>
                 </thead>
 
                 <tbody>
                     @forelse ($kelas as $item)
                         <tr>
-                            <td>{{ $loop->iteration }}</td>
-
-                            <td class="class-code">
-                                {{ $item->kode_kelas }}
-                            </td>
+                            <td>{{ ($kelas->firstItem() ?? 1) + $loop->index }}</td>
 
                             <td>
-                                {{ $item->waliKelas?->nama ?? 'Belum ditentukan' }}
-                            </td>
-
-                            <td>
-                                {{ $item->tipe_periode }}
-                            </td>
-
-                            <td>
-                                Rp {{ number_format($item->nominal_standar, 0, ',', '.') }}
-                            </td>
-
-                            <td>
+                                <div class="class-info-main">
+                                    <span class="class-name">{{ $item->nama_kelas ?: $item->kode_kelas }}</span>
+                                    <span class="class-code-badge">{{ $item->kode_kelas }}</span>
+                                </div>
+                                <span class="class-info-sub">TA {{ $item->tahun_ajaran ?: '-' }}</span>
+                                @if($item->keterangan)
+                                    <span class="class-info-sub">{{ $item->keterangan }}</span>
+                                @endif
                                 <span class="status {{ $item->status === 'aktif' ? 'aktif' : 'nonaktif' }}">
                                     {{ ucfirst($item->status) }}
                                 </span>
                             </td>
 
+                            <td class="wali-cell">
+                                @if($item->waliKelas)
+                                    <strong>{{ $item->waliKelas->nama }}</strong>
+                                    <small>NIP: {{ $item->waliKelas->nip ?: '-' }}</small>
+                                @else
+                                    <span class="class-meta">Belum ditentukan</span>
+                                @endif
+                            </td>
+
+                            <td>
+                                <span class="student-badge">
+                                    <i class="fa-solid fa-user-graduate"></i>
+                                    {{ number_format($item->students_count, 0, ',', '.') }} Siswa
+                                </span>
+                            </td>
+
+                            <td>
+                                @forelse($item->bendahara as $bendahara)
+                                    <span class="cashier-badge">
+                                        <i class="fa-solid fa-user-tie"></i>
+                                        {{ $bendahara->nama }}
+                                    </span>
+                                @empty
+                                    <span class="class-meta">Belum ditentukan</span>
+                                @endforelse
+                            </td>
+
                             <td>
                                 <div class="actions">
-
                                     <a
                                         href="{{ route('super-admin.kelas.show', $item->id) }}"
                                         class="btn-action btn-detail"
+                                        title="Lihat detail"
+                                        aria-label="Lihat detail {{ $item->nama_kelas }}"
                                     >
                                         <i class="fa-solid fa-eye"></i>
-                                        Detail
                                     </a>
 
                                     <a
                                         href="{{ route('super-admin.kelas.edit', $item->id) }}"
                                         class="btn-action btn-edit"
+                                        title="Edit kelas"
+                                        aria-label="Edit {{ $item->nama_kelas }}"
                                     >
                                         <i class="fa-solid fa-pen-to-square"></i>
-                                        Edit
                                     </a>
 
                                     <button
                                         type="button"
                                         class="btn-action btn-delete"
+                                        title="Hapus kelas"
+                                        aria-label="Hapus {{ $item->nama_kelas }}"
                                         onclick="confirmDelete('{{ $item->id }}', @js($item->nama_kelas))"
                                     >
                                         <i class="fa-solid fa-trash"></i>
-                                        Hapus
                                     </button>
-
                                 </div>
                             </td>
                         </tr>
 
                     @empty
                         <tr>
-                            <td colspan="7">
+                            <td colspan="6">
                                 <div class="empty">
                                     <div class="empty-icon">
                                         <i class="fa-solid fa-school"></i>
                                     </div>
 
-                                    <h3>Belum Ada Data Kelas</h3>
+                                    <h3>{{ $search !== '' ? 'Kelas Tidak Ditemukan' : 'Belum Ada Kelas' }}</h3>
 
                                     <p>
-                                        Data kelas belum tersedia.<br>
-                                        Klik tombol Tambah Kelas untuk mulai mendaftarkan kelas.
+                                        {{ $search !== '' ? 'Coba gunakan kata kunci lain.' : 'Tambahkan kelas baru untuk mulai mengelola rombongan belajar.' }}
                                     </p>
                                 </div>
                             </td>
@@ -612,12 +935,37 @@
                 </tbody>
             </table>
         </div>
-    </section>
 
-    <a href="{{ route('super-admin.dashboard') }}" class="back">
-        <i class="fa-solid fa-arrow-left"></i>
-        Kembali ke Dashboard
-    </a>
+        <div class="pagination-footer">
+            <span>
+                Menampilkan {{ $kelas->firstItem() ?? 0 }} s/d {{ $kelas->lastItem() ?? 0 }}
+                dari {{ $kelas->total() }} kelas
+            </span>
+            @if($kelas->hasPages())
+                <nav class="pagination" aria-label="Halaman daftar kelas">
+                    @if($kelas->onFirstPage())
+                        <span class="disabled" aria-disabled="true">Sebelum</span>
+                    @else
+                        <a href="{{ $kelas->previousPageUrl() }}">Sebelum</a>
+                    @endif
+
+                    @foreach($kelas->getUrlRange(1, $kelas->lastPage()) as $page => $url)
+                        @if($page === $kelas->currentPage())
+                            <span class="current" aria-current="page">{{ $page }}</span>
+                        @else
+                            <a href="{{ $url }}" aria-label="Halaman {{ $page }}">{{ $page }}</a>
+                        @endif
+                    @endforeach
+
+                    @if($kelas->hasMorePages())
+                        <a href="{{ $kelas->nextPageUrl() }}">Lanjut</a>
+                    @else
+                        <span class="disabled" aria-disabled="true">Lanjut</span>
+                    @endif
+                </nav>
+            @endif
+        </div>
+    </section>
 
     <footer class="footer">
         MYCASH &copy; {{ date('Y') }} — Smart Class Finance

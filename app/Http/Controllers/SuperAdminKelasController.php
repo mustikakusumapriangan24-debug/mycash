@@ -3,31 +3,149 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kelas;
+use App\Models\Student;
+use App\Models\Transaction;
 use App\Models\WaliKelas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Str;
 
 class SuperAdminKelasController extends Controller
 {
     // Menampilkan daftar kelas.
-    public function index()
+    public function index(Request $request)
     {
-        $kelas = Kelas::with('waliKelas')
-            ->orderBy('kode_kelas', 'asc')
-            ->get();
+        $search = trim((string) $request->query('search', ''));
+        $query = Kelas::with(['waliKelas', 'bendahara'])
+            ->withCount('students');
 
-        return view('super-admin.kelas.index', compact('kelas'));
+        if ($search !== '') {
+            $query->where(function ($builder) use ($search) {
+                $builder->where('nama_kelas', 'like', "%{$search}%")
+                    ->orWhere('kode_kelas', 'like', "%{$search}%")
+                    ->orWhere('tahun_ajaran', 'like', "%{$search}%")
+                    ->orWhere('keterangan', 'like', "%{$search}%")
+                    ->orWhereHas('waliKelas', function ($waliQuery) use ($search) {
+                        $waliQuery->where('nama', 'like', "%{$search}%")
+                            ->orWhere('nip', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('bendahara', function ($bendaharaQuery) use ($search) {
+                        $bendaharaQuery->where('nama', 'like', "%{$search}%")
+                            ->orWhere('nis', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $kelas = $query
+            ->orderBy('nama_kelas', 'asc')
+            ->paginate(10)
+            ->withQueryString();
+        $totalKelas = Kelas::count();
+
+        return view('super-admin.kelas.index', compact(
+            'kelas',
+            'totalKelas',
+            'search'
+        ));
     }
 
     // Menampilkan detail kelas.
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        $kelas = Kelas::with('waliKelas')->findOrFail($id);
+        $kelas = Kelas::with(['waliKelas', 'bendahara.user'])
+            ->withCount([
+                'students',
+                'students as male_students_count' => fn ($query) => $query->where('gender', 'L'),
+                'students as female_students_count' => fn ($query) => $query->where('gender', 'P'),
+            ])
+            ->findOrFail($id);
 
-        return view('super-admin.kelas.show', compact('kelas'));
+        $studentSearch = trim($request->query('student_search', ''));
+        $students = $kelas->students()
+            ->with('user')
+            ->when($studentSearch !== '', function ($query) use ($studentSearch) {
+                $query->where(function ($studentQuery) use ($studentSearch) {
+                    $studentQuery->where('name', 'like', "%{$studentSearch}%")
+                        ->orWhere('nis', 'like', "%{$studentSearch}%")
+                        ->orWhere('phone', 'like', "%{$studentSearch}%")
+                        ->orWhereHas('user', function ($userQuery) use ($studentSearch) {
+                            $userQuery->where('email', 'like', "%{$studentSearch}%");
+                        });
+                });
+            })
+            ->orderBy('name')
+            ->paginate(10, ['*'], 'student_page')
+            ->withQueryString();
+
+        $unassignedStudents = Student::whereNull('kelas_id')
+            ->orderBy('name')
+            ->get(['id', 'name', 'nis']);
+
+        $cashierIds = $kelas->bendahara->pluck('id');
+        $transactions = Transaction::whereIn('bendahara_id', $cashierIds);
+        $totalPemasukan = (clone $transactions)->where('type', 'in')->sum('amount');
+        $totalPengeluaran = (clone $transactions)->where('type', 'out')->sum('amount');
+        $totalTransaksiPengeluaran = (clone $transactions)->where('type', 'out')->count();
+
+        return view('super-admin.kelas.show', compact(
+            'kelas',
+            'students',
+            'studentSearch',
+            'unassignedStudents',
+            'totalPemasukan',
+            'totalPengeluaran',
+            'totalTransaksiPengeluaran'
+        ));
+    }
+
+    public function assignStudent(Request $request, $id)
+    {
+        $kelas = Kelas::findOrFail($id);
+        $validated = $request->validate([
+            'student_id' => [
+                'required',
+                'integer',
+                Rule::exists('students', 'id')
+                    ->whereNull('kelas_id')
+                    ->whereNull('deleted_at'),
+            ],
+        ], [
+            'student_id.exists' => 'Siswa sudah ditugaskan ke kelas lain atau tidak tersedia.',
+        ]);
+
+        DB::transaction(function () use ($validated, $kelas) {
+            $student = Student::lockForUpdate()->findOrFail($validated['student_id']);
+
+            if ($student->kelas_id !== null) {
+                throw ValidationException::withMessages([
+                    'student_id' => 'Siswa sudah ditugaskan ke kelas lain.',
+                ]);
+            }
+
+            $student->update(['kelas_id' => $kelas->id]);
+        });
+
+        return redirect()
+            ->route('super-admin.kelas.show', $kelas->id)
+            ->with('success', 'Siswa berhasil ditambahkan ke kelas.');
+    }
+
+    public function removeStudent(Request $request, $id, $studentId)
+    {
+        $kelas = Kelas::findOrFail($id);
+        $student = $kelas->students()->findOrFail($studentId);
+        $student->update(['kelas_id' => null]);
+
+        $query = $request->filled('student_search')
+            ? ['student_search' => $request->input('student_search')]
+            : [];
+
+        return redirect()
+            ->route('super-admin.kelas.show', array_merge(['id' => $kelas->id], $query))
+            ->with('success', 'Siswa berhasil dilepaskan dari kelas.');
     }
 
     // Menampilkan form tambah kelas.
@@ -102,7 +220,7 @@ class SuperAdminKelasController extends Controller
                 'keterangan' => $validated['keterangan'] ?? null,
                 'id_wali_kelas' => $idWaliKelas,
                 'tipe_periode' => 'Bulanan',
-                'nominal_standar' => 10000,
+                'nominal_standar' => null,
                 'status' => 'aktif',
             ]);
         });
@@ -150,7 +268,7 @@ class SuperAdminKelasController extends Controller
             'tahun_ajaran' => ['required', 'string', 'max:20'],
             'id_wali_kelas' => ['nullable', 'integer', 'exists:wali_kelas,id'],
             'tipe_periode' => ['required', Rule::in(['Bulanan', 'Mingguan', 'Tahunan'])],
-            'nominal_standar' => ['required', 'numeric', 'min:0'],
+            'nominal_standar' => ['nullable', 'numeric', 'min:1'],
             'keterangan' => ['nullable', 'string'],
             'status' => ['required', Rule::in(['aktif', 'nonaktif'])],
         ], [
@@ -158,7 +276,6 @@ class SuperAdminKelasController extends Controller
             'kode_kelas.required' => 'Kode kelas wajib diisi.',
             'tahun_ajaran.required' => 'Tahun ajaran wajib diisi.',
             'tipe_periode.required' => 'Tipe periode wajib dipilih.',
-            'nominal_standar.required' => 'Nominal standar wajib diisi.',
             'nominal_standar.numeric' => 'Nominal harus berupa angka.',
             'status.required' => 'Status kelas wajib dipilih.',
         ]);
@@ -190,7 +307,9 @@ class SuperAdminKelasController extends Controller
                 'tahun_ajaran' => $validated['tahun_ajaran'],
                 'id_wali_kelas' => $idWaliKelas,
                 'tipe_periode' => $validated['tipe_periode'],
-                'nominal_standar' => $validated['nominal_standar'],
+                'nominal_standar' => array_key_exists('nominal_standar', $validated)
+                    ? $validated['nominal_standar']
+                    : $kelas->nominal_standar,
                 'keterangan' => $validated['keterangan'] ?? null,
                 'status' => $validated['status'],
             ]);

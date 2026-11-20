@@ -69,6 +69,26 @@
         gap: 12px;
     }
 
+    .payment-status-page .back-report-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 11px 13px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        color: var(--maroon-dark);
+        background: white;
+        font-size: 10px;
+        font-weight: 700;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .payment-status-page .back-report-button:hover {
+        background: var(--cream-light);
+        border-color: var(--gold);
+    }
+
     .payment-status-page .class-box {
         min-width: 190px;
         padding: 12px 16px;
@@ -592,6 +612,14 @@
 
         <div class="topbar-right">
 
+            @if(auth()->user()->role === 'wali_kelas')
+                <a href="{{ route('wali-kelas.kas') }}"
+                    class="back-report-button">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Kembali ke Laporan
+                </a>
+            @endif
+
             <div class="class-box">
 
                 <i class="fa-solid fa-users"></i>
@@ -712,10 +740,12 @@
             Iuran wajib setiap siswa:
 
             <strong>
-                Rp {{ number_format($monthlyFee ?? 10000, 0, ',', '.') }}
+                @if($periodFee !== null)
+                    Rp {{ number_format($periodFee, 0, ',', '.') }} per {{ $periodType === 'Mingguan' ? 'minggu' : 'bulan' }}
+                @else
+                    Belum ditentukan
+                @endif
             </strong>
-
-            per bulan.
         </span>
 
     </div>
@@ -750,12 +780,12 @@
                         <th>Nama Siswa</th>
 
                         @foreach(
-                            $studentPayments->first()['months'] ?? []
-                            as $month
+                            $studentPayments->first()['periods'] ?? []
+                            as $period
                         )
 
                             <th>
-                                {{ $month['label'] }}
+                                {{ $period['label'] }}
                             </th>
 
                         @endforeach
@@ -801,7 +831,7 @@
 
                             <!-- MONTHS -->
 
-                            @foreach($data['months'] as $month)
+                            @foreach($data['periods'] as $period)
 
                                 <td>
 
@@ -810,13 +840,13 @@
                                         <input
                                             type="checkbox"
                                             class="payment-checkbox"
-                                            {{ $month['paid'] ? 'checked' : '' }}
+                                            {{ $period['paid'] ? 'checked' : '' }}
                                             disabled
                                         >
 
-                                        <span class="payment-amount {{ $month['paid'] ? 'paid' : 'unpaid' }}">
+                                        <span class="payment-amount {{ $period['paid'] ? 'paid' : 'unpaid' }}">
 
-                                            Rp {{ number_format($month['amount'], 0, ',', '.') }}
+                                            Rp {{ number_format($period['amount'], 0, ',', '.') }}
 
                                         </span>
 
@@ -946,11 +976,12 @@
 
             <span>
 
-                Checkbox akan tercentang otomatis apabila
-                nominal pembayaran pada bulan tersebut telah
-                mencapai Rp
-
-                {{ number_format($monthlyFee ?? 10000, 0, ',', '.') }}.
+                @if($periodFee !== null)
+                    Checkbox akan tercentang otomatis apabila nominal pembayaran pada periode tersebut telah mencapai Rp
+                    {{ number_format($periodFee, 0, ',', '.') }}.
+                @else
+                    Tarif kas belum ditentukan. Status pembayaran belum bisa ditandai lunas sampai tarif ditetapkan.
+                @endif
 
             </span>
 

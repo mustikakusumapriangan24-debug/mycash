@@ -6,13 +6,22 @@ use App\Models\Student;
 use App\Models\StudentPayment;
 use App\Models\Transaction;
 use App\Models\Notification;
+use App\Models\Kelas;
+use App\Models\StudentWeeklyPayment;
+use App\Services\CashPeriodService;
+use App\Services\TransactionAuditLogger;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class StudentPaymentController extends Controller
 {
-    private const MONTHLY_FEE = 10000;
+    public function __construct(
+        private readonly TransactionAuditLogger $auditLogger,
+        private readonly CashPeriodService $cashPeriods
+    ) {
+    }
 
     // KATEGORI PEMASUKAN
     private const INCOME_CATEGORIES = [
@@ -53,13 +62,18 @@ class StudentPaymentController extends Controller
 
     public function index(Request $request)
     {
-        $selectedYear = (int) $request->input('year', now()->year);
+        $cashSetting = $this->cashPeriods->settingForUser($request->user());
+        $selectedYear = (int) $request->input(
+            'year',
+            $this->cashPeriods->currentSchoolYear($cashSetting)
+        );
 
         if ($selectedYear < 2020 || $selectedYear > 2100) {
-            $selectedYear = now()->year;
+            $selectedYear = $this->cashPeriods->currentSchoolYear($cashSetting);
         }
 
         $search = trim((string) ($request->input('search') ?? ''));
+        $paymentSearch = trim((string) ($request->input('payment_search') ?? ''));
         $type = (string) ($request->input('type') ?? '');
         $category = (string) ($request->input('category') ?? '');
         $fromDate = (string) ($request->input('from_date') ?? '');
@@ -68,51 +82,47 @@ class StudentPaymentController extends Controller
         // DATA SISWA
         $students = Student::orderBy('name')->get();
 
-        // DATA PEMBAYARAN SISWA
-        $payments = StudentPayment::whereIn(
-            'student_id',
-            $students->pluck('id')
-        )
-            ->whereYear('payment_month', $selectedYear)
-            ->get()
-            ->groupBy('student_id');
+        $paginationQuery = $request->query();
+        unset(
+            $paginationQuery['page'],
+            $paginationQuery['payment_page'],
+            $paginationQuery['report_table']
+        );
 
-        $studentPayments = $students->map(
-            function ($student) use ($payments, $selectedYear) {
-                $paymentData = $payments->get(
-                    $student->id,
-                    collect()
-                );
+        $paymentStudentQuery = Student::query();
 
-                $monthlyPayments = [];
+        if ($paymentSearch !== '') {
+            $paymentStudentQuery->where(function ($query) use ($paymentSearch) {
+                $query->where('name', 'like', "%{$paymentSearch}%")
+                    ->orWhere('nis', 'like', "%{$paymentSearch}%");
+            });
+        }
 
-                for ($i = 1; $i <= 12; $i++) {
-                    $month = Carbon::create($selectedYear, $i, 1);
+        $paymentStudents = $paymentStudentQuery
+            ->orderBy('name')
+            ->paginate(10, ['*'], 'payment_page')
+            ->appends(array_merge($paginationQuery, [
+                'report_table' => 'payments',
+            ]));
 
-                    $amount = $paymentData
-                        ->filter(function ($item) use ($month) {
-                            return Carbon::parse($item->payment_month)
-                                ->format('Y-m') === $month->format('Y-m');
-                        })
-                        ->sum('amount');
-
-                    $amount = (float) $amount;
-
-                    $monthlyPayments[] = [
-                        'month' => $month->format('Y-m-d'),
-                        'label' => $month->translatedFormat('M'),
-                        'amount' => $amount,
-                        'paid' => $amount >= self::MONTHLY_FEE,
-                        'payment_id' => null,
-                    ];
-                }
-
-                return [
-                    'student' => $student,
-                    'months' => $monthlyPayments,
-                    'total' => collect($monthlyPayments)->sum('amount'),
-                ];
-            }
+        $paymentPeriods = $this->cashPeriods->periods(
+            $cashSetting,
+            $selectedYear
+        );
+        $currentMonthPeriod = collect($paymentPeriods)->first(
+            fn (array $period) => $period['month_date']->isSameMonth(now())
+        );
+        $defaultPaymentMonth = $currentMonthPeriod['key']
+            ?? $paymentPeriods[0]['key'];
+        $defaultPaymentWeek = $currentMonthPeriod
+            && $currentMonthPeriod['week_number'] !== null
+            ? $currentMonthPeriod['week_number']
+                + min(3, (int) floor((now()->day - 1) / 7))
+            : ($paymentPeriods[0]['week_number'] ?? 1);
+        $studentPayments = $this->cashPeriods->buildChecklist(
+            $paymentStudents->getCollection(),
+            $cashSetting,
+            $selectedYear
         );
 
         // QUERY TRANSAKSI
@@ -155,7 +165,13 @@ class StudentPaymentController extends Controller
         $transactions = $transactionQuery
             ->latest()
             ->paginate(10)
-            ->withQueryString();
+            ->appends(array_merge($paginationQuery, [
+                'report_table' => 'transactions',
+            ]));
+
+        $activeReportTable = $request->input('report_table') === 'payments'
+            ? 'payments'
+            : 'transactions';
 
         // TOTAL KESELURUHAN TRANSAKSI
         // Tidak terpengaruh filter, pencarian, atau pagination.
@@ -174,13 +190,21 @@ class StudentPaymentController extends Controller
         return view('transactions.index', [
             'students' => $students,
             'studentPayments' => $studentPayments,
+            'paymentStudents' => $paymentStudents,
             'transactions' => $transactions,
+            'activeReportTable' => $activeReportTable,
             'selectedYear' => $selectedYear,
-            'monthlyFee' => self::MONTHLY_FEE,
+            'periodFee' => $this->cashPeriods->fee($cashSetting),
+            'periodType' => $this->cashPeriods->periodType($cashSetting),
+            'paymentPeriods' => $paymentPeriods,
+            'cashSetting' => $cashSetting,
+            'defaultPaymentMonth' => $defaultPaymentMonth,
+            'defaultPaymentWeek' => $defaultPaymentWeek,
             'totalPemasukan' => $totalPemasukan,
             'totalPengeluaran' => $totalPengeluaran,
             'totalSaldo' => $totalSaldo,
             'search' => $search,
+            'paymentSearch' => $paymentSearch,
             'type' => $type,
             'category' => $category,
             'fromDate' => $fromDate,
@@ -200,43 +224,132 @@ class StudentPaymentController extends Controller
             'type' => 'required|in:in,out',
             'amount' => 'required|numeric|min:1',
             'description' => 'nullable|string',
+            'receipt' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
 
-        // VALIDASI KATEGORI SESUAI JENIS TRANSAKSI
-        if ($request->type === 'in') {
-            $request->validate([
-                'category' => 'required|in:' .
-                    implode(',', self::INCOME_CATEGORIES),
-            ]);
-        } else {
+        // Kategori hanya dipilih untuk pengeluaran.
+        if ($request->type === 'out') {
             $request->validate([
                 'category' => 'required|in:' .
                     implode(',', self::EXPENSE_CATEGORIES),
             ]);
-        }
 
-        $category = $this->normalizeCategory($request->category);
+            $category = $this->normalizeCategory($request->category);
+        } else {
+            if ($request->filled('income_type')) {
+                $request->validate([
+                    'income_type' => 'required|in:student_cash,general',
+                ]);
+
+                $category = $request->income_type === 'student_cash'
+                    ? 'Kas Siswa'
+                    : 'Pemasukan Lainnya';
+            } else {
+                // Tetap menerima form lama yang mengirim kategori pemasukan.
+                $request->validate([
+                    'category' => 'required|in:' .
+                        implode(',', self::INCOME_CATEGORIES),
+                ]);
+
+                $category = $this->normalizeCategory($request->category);
+            }
+        }
 
         // PEMBAYARAN KAS SISWA
         if (
             $request->type === 'in' &&
             $category === 'Kas Siswa'
         ) {
-            $request->validate([
+            $cashSetting = $this->cashPeriods->settingForUser($request->user());
+            $periodType = $this->cashPeriods->periodType($cashSetting);
+            $validated = $request->validate([
                 'student_id' => 'required|exists:students,id',
-                'payment_month' => 'required|date_format:Y-m',
+                'payment_year' => 'required|integer|between:2020,2100',
+                'payment_month' => $periodType === 'Bulanan'
+                    ? 'required|date_format:Y-m'
+                    : 'nullable',
+                'payment_week' => $periodType === 'Mingguan'
+                    ? 'required|integer|between:1,48'
+                    : 'nullable',
             ]);
 
-            return $this->storeStudentPayment($request);
+            $paymentYear = (int) $validated['payment_year'];
+            $periods = $this->cashPeriods->periods(
+                $cashSetting,
+                $paymentYear
+            );
+            $periodIndex = $this->cashPeriods->findPeriodIndex(
+                $periods,
+                $periodType,
+                $validated['payment_month'] ?? null,
+                isset($validated['payment_week'])
+                    ? (int) $validated['payment_week']
+                    : null
+            );
+
+            if ($periodIndex === null) {
+                return back()
+                    ->withErrors([
+                        'payment_month' => 'Periode pembayaran berada di luar rentang aturan kas yang aktif.',
+                    ])
+                    ->withInput();
+            }
+
+            return $this->storeStudentPayment(
+                $request,
+                $cashSetting,
+                $periods,
+                $periodIndex,
+                $periodType,
+                $paymentYear
+            );
+        }
+
+        $bendahara = $request->user()->bendahara;
+        if (!$bendahara) {
+            return redirect()->back()->with(
+                'error',
+                'Data Bendahara tidak ditemukan. Transaksi tidak dapat disimpan.'
+            );
         }
 
         // TRANSAKSI BIASA
-        Transaction::create([
-            'type' => $request->type,
-            'amount' => $request->amount,
-            'category' => $category,
-            'description' => $request->description,
-        ]);
+        $receiptPath = null;
+        if ($request->type === 'out' && $request->hasFile('receipt')) {
+            $receiptPath = $request->file('receipt')
+                ->store('transaction-receipts', 'public');
+
+            if ($receiptPath === false) {
+                throw new RuntimeException('Gagal menyimpan foto bukti transaksi.');
+            }
+        }
+
+        $actor = $request->user();
+        DB::transaction(function () use (
+            $request,
+            $category,
+            $receiptPath,
+            $bendahara,
+            $actor
+        ) {
+            $transaction = Transaction::create([
+                'bendahara_id' => $bendahara->id,
+                'type' => $request->type,
+                'amount' => $request->amount,
+                'category' => $category,
+                'description' => $request->description,
+                'receipt_path' => $receiptPath,
+            ]);
+
+            $this->auditLogger->record(
+                $actor,
+                $transaction,
+                'tambah',
+                [],
+                $this->auditLogger->snapshot($transaction),
+                'Transaksi kas ditambahkan.'
+            );
+        });
 
         return redirect()
             ->route('transactions.index')
@@ -247,101 +360,87 @@ class StudentPaymentController extends Controller
     // STORE PEMBAYARAN SISWA
     // ================================================================
 
-    private function storeStudentPayment(Request $request)
+    private function storeStudentPayment(
+        Request $request,
+        ?Kelas $cashSetting,
+        array $periods,
+        int $periodIndex,
+        string $periodType,
+        int $paymentYear
+    )
     {
-        $transactionMonth = Carbon::createFromFormat(
-            'Y-m',
-            $request->payment_month
-        )->startOfMonth();
+        if ($this->cashPeriods->fee($cashSetting) === null) {
+            return redirect()
+                ->back()
+                ->withErrors([
+                    'nominal_standar' => 'Tetapkan tarif kas kelas terlebih dahulu sebelum mencatat pembayaran siswa.',
+                ])
+                ->withInput();
+        }
 
-        $transactionYear = $transactionMonth->year;
+        $bendahara = $request->user()->bendahara;
+        if (!$bendahara) {
+            return redirect()->back()->with(
+                'error',
+                'Data Bendahara tidak ditemukan. Pembayaran tidak dapat disimpan.'
+            );
+        }
+
+        $bendaharaId = $bendahara->id;
 
         $student = Student::with('user')->findOrFail(
             (int) $request->student_id
         );
+        $actor = $request->user();
 
         $transaction = null;
 
         DB::transaction(
             function () use (
                 $request,
-                $transactionMonth,
                 $student,
-                &$transaction
+                $bendaharaId,
+                $actor,
+                &$transaction,
+                $periods,
+                $periodIndex,
+                $periodType,
+                $cashSetting
             ) {
                 $studentId = (int) $request->student_id;
-                $remaining = (float) $request->amount;
 
                 $transaction = Transaction::create([
+                    'bendahara_id' => $bendaharaId,
                     'type' => 'in',
                     'amount' => $request->amount,
                     'category' => 'Kas Siswa',
-                    'description' =>
-                        'Pembayaran kas siswa - ' .
-                        $student->name .
-                        ' - ' .
-                        $transactionMonth->translatedFormat('F Y') .
-                        ' - Rp ' .
-                        number_format(
-                            $request->amount,
-                            0,
-                            ',',
-                            '.'
-                        ),
+                    'description' => 'Pembayaran kas siswa',
                 ]);
 
-                // ALOKASI KE BULAN PEMBAYARAN
-                $allocationMonth = $transactionMonth
-                    ->copy()
-                    ->startOfYear();
+                $allocationSummary = $this->cashPeriods->allocate(
+                    $transaction,
+                    $studentId,
+                    $periods,
+                    $periodIndex,
+                    $periodType,
+                    $this->cashPeriods->fee($cashSetting),
+                    (float) $request->amount
+                );
 
-                while ($remaining > 0) {
-                    $payment = StudentPayment::where(
-                        'student_id',
-                        $studentId
-                    )
-                        ->whereDate(
-                            'payment_month',
-                            $allocationMonth->format('Y-m-d')
-                        )
-                        ->first();
+                $transaction->description = $this->paymentDurationDescription(
+                    $periodType,
+                    $allocationSummary
+                );
+                $transaction->save();
 
-                    if (!$payment) {
-                        $payment = new StudentPayment();
-
-                        $payment->student_id = $studentId;
-                        $payment->transaction_id = $transaction->id;
-                        $payment->payment_month =
-                            $allocationMonth->format('Y-m-d');
-                        $payment->amount = 0;
-                    } else {
-                        if (!$payment->transaction_id) {
-                            $payment->transaction_id = $transaction->id;
-                        }
-                    }
-
-                    $currentAmount = (float) $payment->amount;
-
-                    if ($currentAmount >= self::MONTHLY_FEE) {
-                        $allocationMonth->addMonth();
-                        continue;
-                    }
-
-                    $remainingForMonth =
-                        self::MONTHLY_FEE - $currentAmount;
-
-                    $allocation = min(
-                        $remaining,
-                        $remainingForMonth
-                    );
-
-                    $payment->amount = $currentAmount + $allocation;
-                    $payment->paid_at = now();
-                    $payment->save();
-
-                    $remaining -= $allocation;
-                    $allocationMonth->addMonth();
-                }
+                $this->auditLogger->record(
+                    $actor,
+                    $transaction,
+                    'tambah',
+                    [],
+                    $this->auditLogger->snapshot($transaction),
+                    'Transaksi kas siswa ditambahkan.'
+                );
             }
         );
 
@@ -359,20 +458,41 @@ class StudentPaymentController extends Controller
                         ',',
                         '.'
                     ) .
-                    ' untuk ' .
-                    $transactionMonth->translatedFormat('F Y') .
                     ' telah berhasil dicatat oleh bendahara.',
             ]);
         }
 
         return redirect()
             ->route('transactions.index', [
-                'year' => $transactionYear,
+                'year' => $paymentYear,
             ])
             ->with(
                 'success',
                 'Pembayaran kas siswa berhasil dicatat.'
             );
+    }
+
+    private function paymentDurationDescription(
+        string $periodType,
+        array $allocationSummary
+    ): string {
+        $unit = $periodType === 'Mingguan' ? 'minggu' : 'bulan';
+        $periodCount = $allocationSummary['period_count'];
+        $fullyPaidCount = $allocationSummary['fully_paid_count'];
+
+        if ($periodCount === 1 && $fullyPaidCount === 1) {
+            return "Pembayaran kas untuk 1 {$unit}.";
+        }
+
+        if ($fullyPaidCount === $periodCount) {
+            return "Pembayaran kas untuk {$fullyPaidCount} {$unit}.";
+        }
+
+        if ($fullyPaidCount > 0) {
+            return "Pembayaran kas untuk {$fullyPaidCount} {$unit} penuh dan sebagian periode berikutnya.";
+        }
+
+        return "Pembayaran kas untuk sebagian {$unit}.";
     }
 
     // ================================================================
@@ -387,6 +507,8 @@ class StudentPaymentController extends Controller
             'amount' => 'required|numeric|min:1',
             'description' => 'nullable|string',
         ]);
+        $actor = $request->user();
+        $beforeData = $this->auditLogger->snapshot($transaction);
 
         // TRANSAKSI BIASA
         if ($transaction->category !== 'Kas Siswa') {
@@ -407,11 +529,31 @@ class StudentPaymentController extends Controller
                 $request->category
             );
 
-            $transaction->update([
-                'category' => $category,
-                'amount' => $request->amount,
-                'description' => $request->description,
-            ]);
+            DB::transaction(function () use (
+                $transaction,
+                $category,
+                $request,
+                $actor,
+                $beforeData
+            ) {
+                $transaction->update([
+                    'category' => $category,
+                    'amount' => $request->amount,
+                    'description' => $request->description,
+                ]);
+
+                $afterData = $this->auditLogger->snapshot($transaction);
+                if ($beforeData !== $afterData) {
+                    $this->auditLogger->record(
+                        $actor,
+                        $transaction,
+                        'edit',
+                        $beforeData,
+                        $afterData,
+                        'Data transaksi kas diperbarui.'
+                    );
+                }
+            });
 
             return redirect()
                 ->route('transactions.index')
@@ -422,161 +564,169 @@ class StudentPaymentController extends Controller
         }
 
         // TRANSAKSI KAS SISWA
-        $linkedPayments = StudentPayment::where(
+        $linkedMonthlyPayments = StudentPayment::where(
             'transaction_id',
             $transaction->id
-        )
-            ->orderBy('payment_month')
-            ->get();
+        )->orderBy('payment_month')->get();
+        $linkedWeeklyPayments = StudentWeeklyPayment::where(
+            'transaction_id',
+            $transaction->id
+        )->orderBy('school_year')->orderBy('week_number')->get();
 
         $oldAmount = (float) $transaction->amount;
         $newAmount = (float) $request->amount;
 
-        $studentId = $linkedPayments->first()?->student_id;
+        $firstLinkedPayment = $linkedWeeklyPayments->first()
+            ?? $linkedMonthlyPayments->first();
+        $studentId = $firstLinkedPayment?->student_id;
 
         $student = $studentId
             ? Student::with('user')->find($studentId)
             : null;
+        $cashSetting = $this->cashPeriods->settingForUser($actor);
+        $periodType = $linkedWeeklyPayments->isNotEmpty()
+            ? 'Mingguan'
+            : 'Bulanan';
+        $fee = $this->cashPeriods->fee($cashSetting);
+
+        if ($fee === null) {
+            return redirect()
+                ->back()
+                ->withErrors([
+                    'nominal_standar' => 'Tetapkan tarif kas kelas terlebih dahulu sebelum mengubah pembayaran siswa.',
+                ])
+                ->withInput();
+        }
 
         DB::transaction(
             function () use (
                 $transaction,
-                $linkedPayments,
+                $linkedMonthlyPayments,
+                $linkedWeeklyPayments,
                 $oldAmount,
-                $newAmount
+                $newAmount,
+                $actor,
+                $beforeData,
+                $cashSetting,
+                $periodType,
+                $fee,
+                $studentId
             ) {
-                // NOMINAL SAMA
-                if ($oldAmount === $newAmount) {
-                    $transaction->description =
-                        $this->updateAmountInDescription(
-                            $transaction->description,
-                            $newAmount
-                        );
+                if ($oldAmount !== $newAmount && $studentId) {
+                    $difference = abs($newAmount - $oldAmount);
+                    $linkedPayments = $periodType === 'Mingguan'
+                        ? $linkedWeeklyPayments
+                        : $linkedMonthlyPayments;
 
-                    $transaction->save();
+                    if ($newAmount < $oldAmount) {
+                        $orderedPayments = $periodType === 'Mingguan'
+                            ? $linkedPayments->sortByDesc('week_number')
+                            : $linkedPayments->sortByDesc('payment_month');
 
-                    return;
-                }
+                        foreach ($orderedPayments as $payment) {
+                            if ($difference <= 0) {
+                                break;
+                            }
 
-                // NOMINAL DIKURANGI
-                if ($newAmount < $oldAmount) {
-                    $difference = $oldAmount - $newAmount;
+                            $deduct = min(
+                                $difference,
+                                (float) $payment->amount
+                            );
+                            $payment->amount = (float) $payment->amount - $deduct;
 
-                    foreach (
-                        $linkedPayments->sortByDesc('payment_month')
-                        as $payment
-                    ) {
-                        if ($difference <= 0) {
-                            break;
+                            if ((float) $payment->amount <= 0) {
+                                $payment->delete();
+                            } else {
+                                $payment->paid_at = now();
+                                $payment->save();
+                            }
+
+                            $difference -= $deduct;
                         }
 
-                        $currentAmount = (float) $payment->amount;
-
-                        $deduct = min(
-                            $difference,
-                            $currentAmount
-                        );
-
-                        $payment->amount = $currentAmount - $deduct;
-
-                        if ($payment->amount <= 0) {
-                            $payment->delete();
+                        if ($difference > 0) {
+                            throw new RuntimeException(
+                                'Alokasi pembayaran yang terhubung tidak mencukupi untuk mengurangi nominal transaksi.'
+                            );
+                        }
+                    } elseif ($linkedPayments->isNotEmpty()) {
+                        if ($periodType === 'Mingguan') {
+                            $schoolYear = (int) $linkedPayments->last()->school_year;
+                            $lastWeek = (int) $linkedPayments->last()->week_number;
+                            $lastMonth = null;
                         } else {
-                            $payment->paid_at = now();
-                            $payment->save();
+                            $lastMonth = Carbon::parse(
+                                $linkedPayments->last()->payment_month
+                            );
+                            $schoolYear = $lastMonth->month >=
+                                $this->cashPeriods->startMonth($cashSetting)
+                                ? $lastMonth->year
+                                : $lastMonth->year - 1;
+                            $lastWeek = null;
                         }
 
-                        $difference -= $deduct;
-                    }
-                }
-
-                // NOMINAL DITAMBAH
-                if ($newAmount > $oldAmount) {
-                    $difference = $newAmount - $oldAmount;
-
-                    $lastPaymentMonth = $linkedPayments->max(
-                        'payment_month'
-                    );
-
-                    if ($lastPaymentMonth) {
-                        $allocationMonth = Carbon::parse(
-                            $lastPaymentMonth
-                        )
-                            ->startOfMonth()
-                            ->addMonth();
-                    } else {
-                        $allocationMonth = now()->startOfYear();
-                    }
-
-                    $studentId = $linkedPayments->first()?->student_id;
-
-                    if (!$studentId) {
-                        throw new \RuntimeException(
-                            'Data siswa untuk pembayaran ini tidak ditemukan.'
+                        $periods = $this->cashPeriods->periods(
+                            $cashSetting,
+                            $schoolYear
                         );
-                    }
+                        $startIndex = $this->cashPeriods->findPeriodIndex(
+                            $periods,
+                            $periodType,
+                            $lastMonth?->format('Y-m'),
+                            $lastWeek
+                        );
 
-                    while ($difference > 0) {
-                        $payment = StudentPayment::where(
-                            'student_id',
-                            $studentId
-                        )
-                            ->whereDate(
-                                'payment_month',
-                                $allocationMonth->format('Y-m-d')
-                            )
-                            ->first();
-
-                        if (!$payment) {
-                            $payment = new StudentPayment();
-
-                            $payment->student_id = $studentId;
-                            $payment->transaction_id = $transaction->id;
-                            $payment->payment_month =
-                                $allocationMonth->format('Y-m-d');
-                            $payment->amount = 0;
-                        } elseif (!$payment->transaction_id) {
-                            $payment->transaction_id = $transaction->id;
+                        if ($startIndex === null) {
+                            throw new RuntimeException(
+                                'Periode pembayaran transaksi tidak ditemukan dalam aturan kas aktif.'
+                            );
                         }
 
-                        $currentAmount = (float) $payment->amount;
-
-                        $remainingForMonth = max(
-                            0,
-                            self::MONTHLY_FEE - $currentAmount
+                        $this->cashPeriods->allocate(
+                            $transaction,
+                            $studentId,
+                            $periods,
+                            $startIndex,
+                            $periodType,
+                            $fee,
+                            $difference
                         );
-
-                        if ($remainingForMonth <= 0) {
-                            $allocationMonth->addMonth();
-                            continue;
-                        }
-
-                        $allocation = min(
-                            $difference,
-                            $remainingForMonth
-                        );
-
-                        $payment->amount =
-                            $currentAmount + $allocation;
-
-                        $payment->paid_at = now();
-                        $payment->save();
-
-                        $difference -= $allocation;
-                        $allocationMonth->addMonth();
                     }
                 }
 
                 // UPDATE HISTORY TRANSAKSI
                 $transaction->amount = $newAmount;
-
-                $transaction->description =
-                    $this->updateAmountInDescription(
-                        $transaction->description,
-                        $newAmount
+                $allocationCount = $periodType === 'Mingguan'
+                    ? StudentWeeklyPayment::where('transaction_id', $transaction->id)->count()
+                    : StudentPayment::where('transaction_id', $transaction->id)->count();
+                if ($allocationCount > 0) {
+                    $linkedAfterUpdate = $periodType === 'Mingguan'
+                        ? StudentWeeklyPayment::where('transaction_id', $transaction->id)->get()
+                        : StudentPayment::where('transaction_id', $transaction->id)->get();
+                    $transaction->description = $this->paymentDurationDescription(
+                        $periodType,
+                        [
+                            'period_count' => $linkedAfterUpdate->count(),
+                            'fully_paid_count' => $linkedAfterUpdate
+                                ->filter(fn ($payment) => (float) $payment->amount >= $fee)
+                                ->count(),
+                        ]
                     );
+                }
 
                 $transaction->save();
+
+                $afterData = $this->auditLogger->snapshot($transaction);
+                if ($beforeData !== $afterData) {
+                    $this->auditLogger->record(
+                        $actor,
+                        $transaction,
+                        'edit',
+                        $beforeData,
+                        $afterData,
+                        'Data pembayaran kas siswa diperbarui.'
+                    );
+                }
             }
         );
 
@@ -609,45 +759,14 @@ class StudentPaymentController extends Controller
     }
 
     // ================================================================
-    // UPDATE NOMINAL DI DESCRIPTION
-    // ================================================================
-
-    private function updateAmountInDescription(
-        ?string $description,
-        float $amount
-    ): string {
-        $formattedAmount = 'Rp ' .
-            number_format($amount, 0, ',', '.');
-
-        if (!$description) {
-            return $formattedAmount;
-        }
-
-        $updatedDescription = preg_replace(
-            '/Rp\s*[0-9\.\,]+$/i',
-            $formattedAmount,
-            $description
-        );
-
-        if (
-            $updatedDescription === null ||
-            $updatedDescription === $description
-        ) {
-            return rtrim($description) .
-                ' - ' .
-                $formattedAmount;
-        }
-
-        return $updatedDescription;
-    }
-
-    // ================================================================
     // DELETE TRANSAKSI
     // ================================================================
 
     public function destroyTransaction($id)
     {
         $transaction = Transaction::findOrFail($id);
+        $actor = request()->user();
+        $beforeData = $this->auditLogger->snapshot($transaction);
 
         $linkedPayment = StudentPayment::where(
             'transaction_id',
@@ -656,18 +775,38 @@ class StudentPaymentController extends Controller
             ->with('student.user')
             ->first();
 
-        $student = $linkedPayment?->student;
+        $weeklyPayment = StudentWeeklyPayment::where(
+            'transaction_id',
+            $transaction->id
+        )
+            ->with('student.user')
+            ->first();
+
+        $student = $linkedPayment?->student ?? $weeklyPayment?->student;
 
         DB::transaction(
-            function () use ($transaction) {
+            function () use ($transaction, $actor, $beforeData) {
                 if ($transaction->category === 'Kas Siswa') {
                     StudentPayment::where(
+                        'transaction_id',
+                        $transaction->id
+                    )->delete();
+                    StudentWeeklyPayment::where(
                         'transaction_id',
                         $transaction->id
                     )->delete();
                 }
 
                 $transaction->delete();
+
+                $this->auditLogger->record(
+                    $actor,
+                    $transaction,
+                    'hapus',
+                    $beforeData,
+                    null,
+                    'Transaksi kas dihapus.'
+                );
             }
         );
 
@@ -703,10 +842,23 @@ class StudentPaymentController extends Controller
 
     public function update(Request $request, $id)
     {
+        $fee = $this->cashPeriods->fee(
+            $this->cashPeriods->settingForUser($request->user())
+        );
+
+        if ($fee === null) {
+            return redirect()
+                ->back()
+                ->withErrors([
+                    'nominal_standar' => 'Tetapkan tarif kas kelas terlebih dahulu sebelum mengubah status pembayaran.',
+                ])
+                ->withInput();
+        }
+
         $request->validate([
             'amount' =>
                 'required|numeric|min:0|max:' .
-                self::MONTHLY_FEE,
+                $fee,
         ]);
 
         $payment = StudentPayment::with('student.user')
